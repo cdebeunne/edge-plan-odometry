@@ -50,7 +50,7 @@ for i=1:row
             end
         end
         if smoothnessCloud(i,j)<c_plane
-            % here we define cases in order to prevent from isolated edge
+            % here we define cases in order to prevent from isolated plane
             % points
             if i~=1 && i~=row
                 if smoothnessCloud(i+1,j)<c_plane || smoothnessCloud(i-1,j)<c_plane
