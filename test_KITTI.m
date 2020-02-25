@@ -165,3 +165,12 @@ for k=1:size(traj,2)
     posList = [posList, xWorld];
     
 end
+
+load KITTI_groundtruth.mat
+
+% display the results
+
+plot(posList(1,:), posList(2,:));
+hold on;
+plot(x,y);
+legend('Edge odometry', 'Groundtruth');

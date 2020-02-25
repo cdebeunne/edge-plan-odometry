@@ -145,6 +145,7 @@ try
 catch
     warning('optimisation failure')
 end
+disp(x);
 
 
 
