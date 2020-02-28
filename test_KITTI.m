@@ -144,7 +144,7 @@ for k=1:size(traj,2)
     lb = [-1.5, -1.5, -pi/3];
     ub = [1.5, 1.5, pi/3];
     try
-        options = optimoptions('lsqnonlin','FunctionTolerance', 0.001);
+        options = optimoptions('lsqnonlin','FunctionTolerance', 0.01);
         [x, resnorm] = lsqnonlin(f,x0,lb,ub,options);
     catch
         warning('optimisation failure')
