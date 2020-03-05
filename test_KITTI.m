@@ -131,7 +131,7 @@ for k=1:size(traj,2)
     
     
     x0 = [0, 0, 0];
-    %f = @(x)cost_mahalanobis(corespondences, barycenterMap_1, edgePoints_2, x);
+    %f = @(x)cost_mahalanobis(corespondences, edgePoints_1, edgePoints_2, x);
     f = @(x)cost(corespondences, barycenterMap_1, barycenterMap_2, x);
     
     % remove outliers
@@ -140,7 +140,8 @@ for k=1:size(traj,2)
     corespondences = corespondences(inliers,:);
     
     %levenberg Marquardt optimisation
-    f = @(x)cost(corespondences, barycenterMap_1, barycenterMap_2, x);
+    %f = @(x)cost(corespondences, barycenterMap_1, barycenterMap_2, x);
+    f = @(x)cost_mahalanobis(corespondences, edgePoints_1, edgePoints_2, x);
     lb = [-1.5, -1.5, -pi/3];
     ub = [1.5, 1.5, pi/3];
     try
@@ -158,8 +159,8 @@ for k=1:size(traj,2)
     
     
     
-    theta = theta + x(3);
     R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
+    theta = theta + x(3);
     dxWorld = R*x(1:2)';
     xWorld = xWorld + dxWorld;
     posList = [posList, xWorld];

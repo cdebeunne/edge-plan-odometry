@@ -1,17 +1,17 @@
-load VEL_SCAN_DAT.mat
+load KITTI_SCAN_DAT.mat
 
 % point cloud analysis parameters
-c_edge = 1;
+c_edge = 0.2;
 c_plane = 0.025;
-distThreshold = 0.5;
+distThreshold = 0.2;
 minClusterSize = 10;
-barycenterThreshold = 0.3;
+barycenterThreshold = 1.5;
 
 
-filteredCloud_1 = cloudFilter(traj{50}, distThreshold, "VLP16");
+filteredCloud_1 = cloudFilter(traj{50}, distThreshold, "HDL64");
 [edgeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1, c_edge, c_plane);
 
-filteredCloud_2 = cloudFilter(traj{51}, distThreshold, "VLP16");
+filteredCloud_2 = cloudFilter(traj{51}, distThreshold, "HDL64");
 [edgeIdx_2, labelCloud_2, smoothnessCloud_2] = edgeDetector(filteredCloud_2, c_edge, c_plane);
 
 size1 = size(filteredCloud_1.Location, 1);
@@ -127,7 +127,7 @@ end
 
 
 x0 = [0, 0, 0];
-%f = @(x)cost_mahalanobis(corespondences, barycenterMap_1, edgePoints_2, x); 
+%f = @(x)cost_mahalanobis(corespondences, edgePoints_1, edgePoints_2, x); 
 f = @(x)cost(corespondences, barycenterMap_1, barycenterMap_2, x);
 
 % remove outliers
@@ -137,6 +137,7 @@ corespondences = corespondences(inliers,:);
 
 %levenberg Marquardt optimisation
 f = @(x)cost(corespondences, barycenterMap_1, barycenterMap_2, x);
+%f = @(x)cost_mahalanobis(corespondences, edgePoints_1, edgePoints_2, x); 
 lb = [-1.5, -1.5, -pi/3];
 ub = [1.5, 1.5, pi/3];
 try
