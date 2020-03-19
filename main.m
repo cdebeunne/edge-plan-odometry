@@ -1,18 +1,18 @@
-load VEL_SCAN_DAT.mat
+load KITTI_VEL_SCAN.mat
 
 % point cloud analysis parameters
-c_edge = 1;
+c_edge = 0.2;
 c_plane = 0.025;
-distThreshold = 0.5;
+distThreshold = 0.2;
 minClusterSize = 10;
 barycenterThreshold = 1.5;
 
 
-filteredCloud_1 = cloudFilter(traj{50}, distThreshold, "VLP16");
-[edgeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1, c_edge, c_plane);
+filteredCloud_1 = cloudFilter(traj{50}, "HDL64");
+[edgeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1.Location, c_edge, c_plane);
 
-filteredCloud_2 = cloudFilter(traj{51}, distThreshold, "VLP16");
-[edgeIdx_2, labelCloud_2, smoothnessCloud_2] = edgeDetector(filteredCloud_2, c_edge, c_plane);
+filteredCloud_2 = cloudFilter(traj{51}, "HDL64");
+[edgeIdx_2, labelCloud_2, smoothnessCloud_2] = edgeDetector(filteredCloud_2.Location, c_edge, c_plane);
 
 size1 = size(filteredCloud_1.Location, 1);
 size2 = size(filteredCloud_1.Location, 2);

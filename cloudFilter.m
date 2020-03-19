@@ -1,4 +1,4 @@
-function filteredCloud = cloudFilter(pc, distThreshold, type)
+function filteredCloud = cloudFilter(pc, type)
 %Filter the cloud with segments
 
 % denoise and reshape point cloud
@@ -6,16 +6,14 @@ function filteredCloud = cloudFilter(pc, distThreshold, type)
 ptCloud = pcdenoise(pointCloud(pc));
 if type == "VLP16"
     ptCloud = pointcloudMatrixVLP16(ptCloud.Location);
-    badPtsIdx = zeros(16, 1800);
 elseif type == "HDL64"
     ptCloud = pointcloudMatrixHDL64(ptCloud.Location);
-    badPtsIdx = zeros(64, 4500);
 end
 
 % segment and remove the ground plane 
 
 groundPtsIdx = segmentGroundFromLidarData(ptCloud);
-ptCloudWithoutGround = select(ptCloud, ~groundPtsIdx, 'OutputSize', 'full');
+filteredCloud = select(ptCloud, ~groundPtsIdx, 'OutputSize', 'full');
 % [labels,numClusters] = pcsegdist(ptCloud,distThreshold);
 % numClusters = numClusters+1;
 % labels(groundPtsIdx) = numClusters;
@@ -30,6 +28,5 @@ ptCloudWithoutGround = select(ptCloud, ~groundPtsIdx, 'OutputSize', 'full');
 %     end
 % end
 %filteredCloud = select(ptCloudWithoutGround, ~badPtsIdx, 'OutputSize', 'full');
-filteredCloud = ptCloudWithoutGround;
 end
 

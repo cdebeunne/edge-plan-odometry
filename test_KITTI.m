@@ -1,4 +1,4 @@
-load KITTI_SCAN_DAT.mat
+load KITTI_VEL_SCAN.mat
 
 % point cloud analysis parameters
 c_edge = 0.2;
@@ -16,11 +16,11 @@ R = eye(2,2);
 for k=1:size(traj,2)
     disp(k);
     
-    filteredCloud_1 = cloudFilter(traj{k}, distThreshold, "HDL64");
-    [edgeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1, c_edge, c_plane);
+    filteredCloud_1 = cloudFilter(traj{k},"HDL64");
+    [edgeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1.Location, c_edge, c_plane);
     
-    filteredCloud_2 = cloudFilter(traj{k+1}, distThreshold, "HDL64");
-    [edgeIdx_2, labelCloud_2, smoothnessCloud_2] = edgeDetector(filteredCloud_2, c_edge, c_plane);
+    filteredCloud_2 = cloudFilter(traj{k+1},"HDL64");
+    [edgeIdx_2, labelCloud_2, smoothnessCloud_2] = edgeDetector(filteredCloud_2.Location, c_edge, c_plane);
     
     size1 = size(filteredCloud_1.Location, 1);
     size2 = size(filteredCloud_1.Location, 2);
@@ -56,7 +56,8 @@ for k=1:size(traj,2)
     % generate an array of subclouds that represent an edge
     edgePoints_1 = {};
     for i=1:numClusters_1
-        edgePoints = select(edgeCloud_1, find(labelsEdge_1==i)).Location;
+        edgePoints = select(edgeCloud_1, find(labelsEdge_1==i));
+        edgePoints = edgePoints.Location;
         edgePoints_1{i} = edgePoints;
     end
     
@@ -76,7 +77,8 @@ for k=1:size(traj,2)
     % generate an array of subclouds that represent an edge
     edgePoints_2 = {};
     for i=1:numClusters_2
-        edgePoints = select(edgeCloud_2, find(labelsEdge_2==i)).Location;
+        edgePoints = select(edgeCloud_2, find(labelsEdge_2==i));
+        edgePoints = edgePoints.Location;
         edgePoints_2{i} = edgePoints;
     end
     
