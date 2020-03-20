@@ -13,8 +13,11 @@ posList = [xWorld];
 theta = 0;
 R = eye(2,2);
 
-for k=1:size(traj,2)
+for k=1:size(traj,2)-1
     disp(k);
+    if size(traj{k},1) == 0 || size(traj{k+1},1)==0
+        continue
+    end
     
     filteredCloud_1 = cloudFilter(traj{k},"HDL64");
     [edgeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1.Location, c_edge, c_plane);
@@ -169,11 +172,11 @@ for k=1:size(traj,2)
     
 end
 
-load KITTI_groundtruth.mat
+load KITTI_OSTX.mat
 
 % display the results
 
 plot(posList(1,:), posList(2,:));
 hold on;
-plot(x,y);
+plot(groundtruth(:,1),groundtruth(:,2));
 legend('Edge odometry', 'Groundtruth');

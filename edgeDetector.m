@@ -1,84 +1,14 @@
 function [edgeIdx, labelCloud, smoothnessCloud] = edgeDetector(xyz, c_edge, c_plane)
 %return arrays describing edges
 
-% get size of pc
-row = size(xyz, 1);
-column = size(xyz, 2);
-
 % create a smouthness cloud
-
-smoothnessCloud = zeros(row, column);
-for i=1:row
-    for j=6:(column-6)
-        if ~isnan(xyz(i,j,1)) && ~(xyz(i,j,1)==0)
-            smoothnessCloud(i,j) = c(xyz, [i,j], 10);
-        end
-    end
-end
+smoothnessCloud = createsmoothnessCloud(xyz, 10);
 
 % classify planes or edges
-
-labelCloud = ones(row, column);
-for i=1:row
-    for j=6:(column-6)
-        if smoothnessCloud(i,j)>c_edge
-            % here we define cases in order to prevent from isolated edge
-            % points
-            if i~=1 && i~=row
-                if smoothnessCloud(i+1,j)>c_edge || smoothnessCloud(i-1,j)>c_edge
-                    labelCloud(i,j) = 2;
-                else
-                    smoothnessCloud(i,j)=-1;
-                end
-            elseif i==1
-                if smoothnessCloud(i+1,j)>c_edge
-                    labelCloud(i,j) = 2;
-                else
-                    smoothnessCloud(i,j)=-1;
-                end
-            else
-                if smoothnessCloud(i-1,j)>c_edge
-                    labelCloud(i,j) = 2;
-                else
-                    smoothnessCloud(i,j)=-1;
-                end
-            end
-        end
-        if smoothnessCloud(i,j)<c_plane
-            % here we define cases in order to prevent from isolated plane
-            % points
-            if i~=1 && i~=row
-                if smoothnessCloud(i+1,j)<c_plane || smoothnessCloud(i-1,j)<c_plane
-                    labelCloud(i,j) = 3;
-                else
-                    smoothnessCloud(i,j)=-1;
-                end
-            elseif i==1
-                if smoothnessCloud(i+1,j)<c_plane
-                    labelCloud(i,j) = 3;
-                else
-                    smoothnessCloud(i,j)=-1;
-                end
-            else
-                if smoothnessCloud(i-1,j)<c_plane
-                    labelCloud(i,j) = 3;
-                else
-                    smoothnessCloud(i,j)=-1;
-                end
-            end
-        end
-    end
-end
+labelCloud = classifyPlanesEdges(smoothnessCloud, c_edge, c_plane);
 
 % let's create the edge cloud
+edgeIdx = ~(labelCloud == 2);
 
-edgeIdx = ones(row, column);
-for i=1:row
-    for j=1:column
-        if labelCloud(i,j)==2
-            edgeIdx(i,j)=0;
-        end
-    end
-end
 end
 
