@@ -16,6 +16,9 @@ R = eye(2,2);
 for k=1:size(traj,2)-1
     disp(k);
     if size(traj{k},1) == 0 || size(traj{k+1},1)==0
+        dxWorld = R*dxWorld;
+        xWorld = xWorld + dxWorld;
+        posList = [posList, xWorld];
         continue
     end
     
@@ -34,8 +37,6 @@ for k=1:size(traj,2)-1
     % evaluate the corespondence
     %----------------------------------------------------------------------
     
-    
-    
     % creating the edgeClouds
     
     edgeCloud_1 = select(filteredCloud_1, ~edgeIdx_1, 'OutputSize', 'full');
@@ -44,58 +45,40 @@ for k=1:size(traj,2)-1
     % clustering the edge clouds
     
     [labelsEdge_1,numClusters_1] = pcsegdist(edgeCloud_1,distThreshold);
-    badPtsIdx_1 = zeros(size1, size2);
-    % select only the biggest edges
-    for i=1:numClusters_1
-        if nnz(labelsEdge_1==i)<minClusterSize
-            [row, col] = find(labelsEdge_1==i);
-            for j=1:size(row)
-                badPtsIdx_1(row(j), col(j)) = 1;
-            end
-        end
-    end
-    edgeCloud_1 = select(edgeCloud_1, ~badPtsIdx_1, 'OutputSize', 'full');
-    [labelsEdge_1,numClusters_1] = pcsegdist(edgeCloud_1,distThreshold);
-    % generate an array of subclouds that represent an edge
+    validLabels_1 = [];
     edgePoints_1 = {};
+    % select only the biggest edges and generate the edgePoint array
     for i=1:numClusters_1
-        edgePoints = select(edgeCloud_1, find(labelsEdge_1==i));
-        edgePoints = edgePoints.Location;
-        edgePoints_1{i} = edgePoints;
+        if nnz(labelsEdge_1==i)>minClusterSize
+            validLabels_1 = [validLabels_1, i];
+            edgePoints = select(edgeCloud_1, find(labelsEdge_1==i));
+            edgePoints_1{length(validLabels_1)} = edgePoints.Location;
+        end
     end
     
     [labelsEdge_2,numClusters_2] = pcsegdist(edgeCloud_2,distThreshold);
-    badPtsIdx_2 = zeros(size1, size2);
-    % select only the biggest edges
-    for i=1:numClusters_2
-        if nnz(labelsEdge_2==i)<minClusterSize
-            [row, col] = find(labelsEdge_2==i);
-            for j=1:size(row)
-                badPtsIdx_2(row(j), col(j)) = 1;
-            end
-        end
-    end
-    edgeCloud_2 = select(edgeCloud_2, ~badPtsIdx_2, 'OutputSize', 'full');
-    [labelsEdge_2,numClusters_2] = pcsegdist(edgeCloud_2,distThreshold);
-    % generate an array of subclouds that represent an edge
+    validLabels_2 = [];
     edgePoints_2 = {};
+    % select only the biggest edges and generate the edgePoint array
     for i=1:numClusters_2
-        edgePoints = select(edgeCloud_2, find(labelsEdge_2==i));
-        edgePoints = edgePoints.Location;
-        edgePoints_2{i} = edgePoints;
+        if nnz(labelsEdge_2==i)>minClusterSize
+            validLabels_2 = [validLabels_2, i];
+            edgePoints = select(edgeCloud_2, find(labelsEdge_2==i));
+            edgePoints_2{length(validLabels_2)} = edgePoints.Location;
+        end
     end
     
     % create the barycenter maps and centered edge clouds
     
     centeredEdgePoints_1 = {};
     centeredEdgePoints_2 = {};
-    barycenterMap_1 = zeros(numClusters_1, 3);
-    for i=1:numClusters_1
+    barycenterMap_1 = zeros(length(validLabels_1), 3);
+    for i=1:length(validLabels_1)
         barycenterMap_1(i,:) = barycenter(edgePoints_1{i});
         centeredEdgePoints_1{i} = edgePoints_1{i}-barycenterMap_1(i,:);
     end
-    barycenterMap_2 = zeros(numClusters_2, 3);
-    for i=1:numClusters_2
+    barycenterMap_2 = zeros(length(validLabels_2), 3);
+    for i=1:length(validLabels_2)
         barycenterMap_2(i,:) = barycenter(edgePoints_2{i});
         centeredEdgePoints_2{i} = edgePoints_2{i}-barycenterMap_2(i,:);
     end
@@ -105,10 +88,10 @@ for k=1:size(traj,2)-1
     corespondences = [];
     % prevent from double match
     idxList = [];
-    for i=1:numClusters_1
+    for i=1:length(validLabels_1)
         dist = 500;
         idx = 0;
-        for j=1:numClusters_2
+        for j=1:length(validLabels_2)
             try
                 mahaldist = mean(mahal(centeredEdgePoints_1{i}, centeredEdgePoints_2{j}));
                 barycenterDist = norm(barycenterMap_1(i,1:2)-barycenterMap_2(j,1:2));
@@ -117,8 +100,7 @@ for k=1:size(traj,2)-1
                     idx = j;
                 end
             catch
-                % handle strange cases of small clusters
-                warning('dimension problem')
+                warning('dimension problem');
             end
         end
         if idx~=0 && ~ismember(idx, idxList) && mahaldist ~= 0
@@ -126,6 +108,8 @@ for k=1:size(traj,2)-1
             corespondences = [corespondences; [i, idx]];
         end
     end
+    
+    
     
     
     
