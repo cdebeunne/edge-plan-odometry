@@ -11,12 +11,12 @@ elseif type == "HDL64"
 end
 
 % remove far points
-% idx = (ptCloud.Location(:,:,1)>40) + (ptCloud.Location(:,:,1)<-40);
-% idy = (ptCloud.Location(:,:,2)>40) + (ptCloud.Location(:,:,2)<-40);
+idx = (ptCloud.Location(:,:,1)>50) + (ptCloud.Location(:,:,1)<-50);
+idy = (ptCloud.Location(:,:,2)>50) + (ptCloud.Location(:,:,2)<-50);
 
 % remove the ground plane 
 
 groundPtsIdx = segmentGroundFromLidarData(ptCloud, 'ElevationAngleDelta',18);
-filteredCloud = select(ptCloud, ~(groundPtsIdx), 'OutputSize', 'full');
+filteredCloud = select(ptCloud, ~(groundPtsIdx+idx+idy), 'OutputSize', 'full');
 end
 

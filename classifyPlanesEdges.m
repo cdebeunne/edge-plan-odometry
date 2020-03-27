@@ -15,8 +15,11 @@ planeCloud = (smoothnessCloud < c_plane & ~edgeCloud);
 % Get shift by one on left and right
 dplaneCloud_left = [planeCloud(2:end,:); planeCloud(end,:)];
 dplaneCloud_right = [planeCloud(end,:); planeCloud(1:(end-1),:)];
+dplaneCloud_up = [planeCloud(:,2:end), planeCloud(:,1)];
+dplaneCloud_down = [planeCloud(:,end), planeCloud(:,1:(end-1))];
 % Look if left OR rigth is also valid
-planeCloud = (planeCloud & dplaneCloud_left) | (planeCloud & dplaneCloud_right);
+planeCloud = (planeCloud & dplaneCloud_left) | (planeCloud & dplaneCloud_right)...
+    | (planeCloud & dplaneCloud_up) | (planeCloud & dplaneCloud_down);
 
 % Set the label : (1) undefied, (2) edge, (3) plane
 labelCloud(edgeCloud) = 2;

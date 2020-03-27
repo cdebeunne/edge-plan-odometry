@@ -44,72 +44,15 @@ for k=1:size(traj,2)-1
     
     % clustering the edge clouds
     
-    [labelsEdge_1,numClusters_1] = pcsegdist(edgeCloud_1,distThreshold);
-    validLabels_1 = [];
-    edgePoints_1 = {};
-    % select only the biggest edges and generate the edgePoint array
-    for i=1:numClusters_1
-        if nnz(labelsEdge_1==i)>minClusterSize
-            validLabels_1 = [validLabels_1, i];
-            edgePoints = select(edgeCloud_1, find(labelsEdge_1==i));
-            edgePoints_1{length(validLabels_1)} = edgePoints.Location;
-        end
-    end
-    
-    [labelsEdge_2,numClusters_2] = pcsegdist(edgeCloud_2,distThreshold);
-    validLabels_2 = [];
-    edgePoints_2 = {};
-    % select only the biggest edges and generate the edgePoint array
-    for i=1:numClusters_2
-        if nnz(labelsEdge_2==i)>minClusterSize
-            validLabels_2 = [validLabels_2, i];
-            edgePoints = select(edgeCloud_2, find(labelsEdge_2==i));
-            edgePoints_2{length(validLabels_2)} = edgePoints.Location;
-        end
-    end
-    
-    % create the barycenter maps and centered edge clouds
-    
-    centeredEdgePoints_1 = {};
-    centeredEdgePoints_2 = {};
-    barycenterMap_1 = zeros(length(validLabels_1), 3);
-    for i=1:length(validLabels_1)
-        barycenterMap_1(i,:) = barycenter(edgePoints_1{i});
-        centeredEdgePoints_1{i} = edgePoints_1{i}-barycenterMap_1(i,:);
-    end
-    barycenterMap_2 = zeros(length(validLabels_2), 3);
-    for i=1:length(validLabels_2)
-        barycenterMap_2(i,:) = barycenter(edgePoints_2{i});
-        centeredEdgePoints_2{i} = edgePoints_2{i}-barycenterMap_2(i,:);
-    end
+    [edgePoints_1, centeredEdgePoints_1, barycenterEdge_1, labelsEdge_1]...
+        = clusteringCentering(edgeCloud_1, distThreshold, minClusterSize);
+    [edgePoints_2, centeredEdgePoints_2, barycenterEdge_2, labelsEdge_2]...
+        = clusteringCentering(edgeCloud_2, distThreshold, minClusterSize);
     
     % match the subclouds
     
-    corespondences = [];
-    % prevent from double match
-    idxList = [];
-    for i=1:length(validLabels_1)
-        dist = 500;
-        idx = 0;
-        for j=1:length(validLabels_2)
-            try
-                mahaldist = mean(mahal(centeredEdgePoints_1{i}, centeredEdgePoints_2{j}));
-                barycenterDist = norm(barycenterMap_1(i,1:2)-barycenterMap_2(j,1:2));
-                if mahaldist < dist && barycenterDist < barycenterThreshold
-                    dist = mahaldist;
-                    idx = j;
-                end
-            catch
-                warning('dimension problem');
-            end
-        end
-        if idx~=0 && ~ismember(idx, idxList) && mahaldist ~= 0
-            idxList = [idxList, idx];
-            corespondences = [corespondences; [i, idx]];
-        end
-    end
-    
-    
+    corespondencesEdge = matching(centeredEdgePoints_1, centeredEdgePoints_2,...
+        barycenterEdge_1, barycenterEdge_2, barycenterThreshold);
     
     
     
@@ -121,16 +64,16 @@ for k=1:size(traj,2)-1
     
     x0 = [0, 0, 0];
     %f = @(x)cost_mahalanobis(corespondences, edgePoints_1, edgePoints_2, x);
-    f = @(x)cost(corespondences, barycenterMap_1, barycenterMap_2, x);
+    f = @(x)cost(corespondencesEdge, barycenterEdge_1, barycenterEdge_2, x);
     
     % remove outliers
     firstEval = f(x0);
     inliers = ~isoutlier(firstEval(:,1));
-    corespondences = corespondences(inliers,:);
+    corespondencesEdge = corespondencesEdge(inliers,:);
     
     %levenberg Marquardt optimisation
     %f = @(x)cost(corespondences, barycenterMap_1, barycenterMap_2, x);
-    f = @(x)cost_mahalanobis(corespondences, edgePoints_1, edgePoints_2, x);
+    f = @(x)cost_mahalanobis(corespondencesEdge, edgePoints_1, edgePoints_2, x);
     lb = [-1.5, -1.5, -pi/3];
     ub = [1.5, 1.5, pi/3];
     try
