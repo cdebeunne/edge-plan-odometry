@@ -1,14 +1,16 @@
-function [clusterArray, centeredCloud, barycenterMap, labels] = clusteringCentering(ptCloud, distThreshold, minClusterSize)
+function [clusterArray, centeredCloud, barycenterMap, labels, validLabels] = clusteringCentering(ptCloud, distThreshold, minClusterSize)
 
 [labels,numClusters] = pcsegdist(ptCloud,distThreshold);
 clusterArray = {};
 ct = 1;
+validLabels = [];
 % select only the biggest plane and generate the planePoint array
 for i=1:numClusters
     if nnz(labels==i)>minClusterSize
         cluster = select(ptCloud, find(labels==i));
         clusterArray{ct} = cluster.Location;
         ct = ct+1;
+        validLabels = [validLabels, i];
     else
         labels(labels==i)=0;
     end
