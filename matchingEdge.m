@@ -1,6 +1,6 @@
-function corespondences = matching(centeredPoints_1, centeredPoints_2, barycenterMap_1, barycenterMap_2, barycenterThreshold)
+function corespondencesEdge = matchingEdge(centeredPoints_1, centeredPoints_2, barycenterMap_1, barycenterMap_2, barycenterThreshold)
 
-corespondences = [];
+corespondencesEdge = [];
 % idenx list to prevent from double match
 idxList = [];  
 for i=1:length(centeredPoints_1)
@@ -20,7 +20,7 @@ for i=1:length(centeredPoints_1)
     end
     if idx~=0 && ~ismember(idx, idxList) && mahaldist ~= 0
         idxList = [idxList, idx];
-        corespondences = [corespondences; [i, idx]];
+        corespondencesEdge = [corespondencesEdge; [i, idx]];
     end
 end
 end

@@ -1,4 +1,4 @@
-load KITTI_VEL_SCAN.mat
+%load KITTI_VEL_SCAN.mat
 
 % point cloud analysis parameters
 c_edge = 0.2;
@@ -8,10 +8,10 @@ minClusterSize = 10;
 barycenterThreshold = 1.5;
 
 
-filteredCloud_1 = cloudFilter(traj{50}, "HDL64");
+filteredCloud_1 = cloudFilter(traj{250}, "HDL64");
 [edgeIdx_1, planeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1.Location, c_edge, c_plane);
 
-filteredCloud_2 = cloudFilter(traj{51}, "HDL64");
+filteredCloud_2 = cloudFilter(traj{251}, "HDL64");
 [edgeIdx_2, planeIdx_2, labelCloud_2, smoothnessCloud_2] = edgeDetector(filteredCloud_2.Location, c_edge, c_plane);
 
 size1 = size(filteredCloud_1.Location, 1);
@@ -41,35 +41,47 @@ edgeCloud_2 = select(filteredCloud_2, ~edgeIdx_2, 'OutputSize', 'full');
 
 % match the subclouds
 
-corespondencesEdge = matching(centeredEdgePoints_1, centeredEdgePoints_2,...
+corespondencesEdge = matchingEdge(centeredEdgePoints_1, centeredEdgePoints_2,...
     barycenterEdge_1, barycenterEdge_2, barycenterThreshold);
 
 
 % creating the planeCloud 
-% getting rid of the remaining ground around the car
 
-idx = (filteredCloud_1.Location(:,:,1)>7) + (filteredCloud_1.Location(:,:,1)<-7);
-idy = (filteredCloud_1.Location(:,:,2)>7) + (filteredCloud_1.Location(:,:,2)<-7);
-index = logical((idx+idy));
-index = logical(index.*(~planeIdx_1));
-planeCloud_1 = select(filteredCloud_1, index, 'OutputSize', 'full');
-idx = (filteredCloud_2.Location(:,:,1)>7) + (filteredCloud_2.Location(:,:,1)<-7);
-idy = (filteredCloud_2.Location(:,:,2)>7) + (filteredCloud_2.Location(:,:,2)<-7);
-index = logical((idx+idy));
-index = logical(index.*(~planeIdx_2));
-planeCloud_2 = select(filteredCloud_2, index, 'OutputSize', 'full');
+planeCloud_1 = select(filteredCloud_1, ~planeIdx_1, 'OutputSize', 'full');
+planeCloud_2 = select(filteredCloud_2, ~planeIdx_2, 'OutputSize', 'full');
 
 % clustering the plane clouds
 
 [planePoints_1, centeredPlane_1, barycenterPlane_1, labelsPlane_1, validLabels_1]...
-    = clusteringCentering(planeCloud_1, 1, 10);
+    = clusteringCentering(planeCloud_1, 0.2, 10);
 [planePoints_2, centeredPlane_2, barycenterPlane_2, labelsPlane_2, validLabels_2]...
-    = clusteringCentering(planeCloud_2, 1, 10);
+    = clusteringCentering(planeCloud_2, 0.2, 10);
+
+% create the normal array
+
+[normalsPlane_1, normalsStd_1] = normalsGenerator(planePoints_1);
+[normalsPlane_2, normalsStd_2]  = normalsGenerator(planePoints_2);
+
+% filtering the planes that are not planes
+
+% goodPlanes_1 = mean(normalsStd_1)<0.7;
+% goodPlanes_2 = mean(normalsStd_2)<0.7;
+% 
+% planePoints_1 = planePoints_1(goodPlanes_1);
+% centeredPlane_1 = centeredPlane_1(goodPlanes_1);
+% barycenterPlane_1 = barycenterPlane_1(goodPlanes_1,:);
+% validLabels_1 = validLabels_1(goodPlanes_1);
+% 
+% planePoints_2 = planePoints_2(goodPlanes_2);
+% centeredPlane_2 = centeredPlane_2(goodPlanes_2);
+% barycenterPlane_2 = barycenterPlane_2(goodPlanes_2,:);
+% validLabels_2 = validLabels_2(goodPlanes_2);
+
 
 % match the plane clouds
 
-corespondencesPlane = matching(centeredPlane_1, centeredPlane_2,...
-    barycenterPlane_1, barycenterPlane_2, 5);
+corespondencesPlane = matchingPlane(centeredPlane_1, centeredPlane_2,...
+    normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, 3);
 
 
 %--------------------------------------------------------------------------
@@ -84,13 +96,28 @@ f = @(x)costEdge(corespondencesEdge, barycenterEdge_1, barycenterEdge_2, x);
 
 % remove outliers
 firstEval = f(x0);
-inliers = ~isoutlier(firstEval(:,1));
+inliers = ~isoutlier(firstEval);
+inliers = logical(inliers(:,1).*inliers(:,2));
 corespondencesEdge = corespondencesEdge(inliers,:);
 
-%levenberg Marquardt optimisation 
-lb = [-1.5, -1.5, -pi/3];
-ub = [1.5, 1.5, pi/3];
-f = @(x)costEdge_mahalanobis(corespondencesEdge, barycenterEdge_1, barycenterEdge_2, x);
+% finding dz, dtheta and dpsi with the planes
+
+y0 = [0,0,0,0,0,0];
+f = @(x)costPlane(corespondencesPlane, normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, x);
+
+%remove outliers
+firstEval = f(y0);
+inliers = ~isoutlier(firstEval);
+inliers = logical(inliers(:,1).*inliers(:,2));
+corespondencesPlane = corespondencesPlane(inliers,:);
+
+
+% global levenberg Marquardt optimisation 
+x0 = [0,0,0,0,0,0];
+lb = [-1.5, -1.5, -0.5, -pi/6, -pi/6, -pi/6];
+ub = [1.5, 1.5, 0.5, pi/6, pi/6, pi/6];
+f = @(x)globalCost(corespondencesEdge, corespondencesPlane, barycenterEdge_1, barycenterEdge_2,...
+    normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, x);
 try
     options = optimoptions('lsqnonlin','FunctionTolerance', 0.001);
     [x, ~] = lsqnonlin(f,x0,lb,ub,options);
@@ -98,29 +125,6 @@ catch
     warning('optimisation failure')
 end
 disp(x);
-
-
-% finding dz, dtheta and dpsi with the planes
-
-y0 = [0,0,0];
-f = @(x)costPlane(corespondencesPlane, barycenterPlane_1, barycenterPlane_2, x(1), x(2), x);
-
-%remove outliers
-firstEval = f(y0);
-inliers = ~isoutlier(firstEval(:,1));
-corespondencesPlane = corespondencesPlane(inliers,:);
-
-%levenberg Marquardt optimisation
-lb = [-1.5, -pi/3, -pi/3];
-ub = [1.5, pi/3, pi/3];
-f = @(x)costPlane(corespondencesPlane, barycenterPlane_1, barycenterPlane_2, x(1), x(2), x);
-try
-    options = optimoptions('lsqnonlin','FunctionTolerance', 0.001);
-    [y, ~] = lsqnonlin(f,y0,lb,ub,options);
-catch
-    warning('optimisation failure')
-end
-disp(y);
 
 
 %--------------------------------------------------------------------------
