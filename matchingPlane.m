@@ -13,7 +13,9 @@ for i=1:length(centeredPoints_1)
             mahaldist = mean(mahal(centeredPoints_1{i}, centeredPoints_2{j}));
             dotRatio = dot(normalsPlane_1(:,i), normalsPlane_2(:,j))/(norm(normalsPlane_1(:,i))*norm(normalsPlane_2(:,j)));
             barycenterDist = norm(barycenterMap_1(i,1:2)-barycenterMap_2(j,1:2));
-            if mahaldist < dist && dotRatio > ratio && barycenterDist < barycenterThreshold
+            deltaSize = abs(length(centeredPoints_1{i})-length(centeredPoints_2{j}))/...
+                max(length(centeredPoints_1{i}),length(centeredPoints_2{j}));
+            if mahaldist < dist && dotRatio > ratio && barycenterDist < barycenterThreshold && deltaSize < 0.3
                 dist = mahaldist;
                 ratio = dotRatio;
                 idx = j;

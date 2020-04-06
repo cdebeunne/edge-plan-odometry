@@ -3,8 +3,8 @@
 % point cloud analysis parameters
 c_edge = 0.2;
 c_plane = 0.05;
-distThreshold = 0.3;
-minClusterSize = 10;
+distThreshold = 0.2;
+minClusterSize = 5;
 barycenterThreshold = 1.5;
 
 % estimator parameters
@@ -67,9 +67,9 @@ for k=1:size(traj,2)-1
     % clustering the plane clouds
     
     [planePoints_1, centeredPlane_1, barycenterPlane_1, labelsPlane_1, validLabels_1]...
-        = clusteringCentering(planeCloud_1, 0.2, 20);
+        = clusteringCentering(planeCloud_1, 0.2, 30);
     [planePoints_2, centeredPlane_2, barycenterPlane_2, labelsPlane_2, validLabels_2]...
-        = clusteringCentering(planeCloud_2, 0.2, 20);
+        = clusteringCentering(planeCloud_2, 0.2, 30);
     
     % creating the normal arrays
     
@@ -77,9 +77,9 @@ for k=1:size(traj,2)-1
     [normalsPlane_2, normalsStd_2]  = normalsGenerator(planePoints_2);
     
     % filtering the planes that are not planes
-    
-%     goodPlanes_1 = mean(normalsStd_1)<0.7;
-%     goodPlanes_2 = mean(normalsStd_2)<0.7;
+%     
+%     goodPlanes_1 = max(normalsStd_1)<0.8;
+%     goodPlanes_2 = max(normalsStd_2)<0.8;
 %     
 %     planePoints_1 = planePoints_1(goodPlanes_1);
 %     centeredPlane_1 = centeredPlane_1(goodPlanes_1);
@@ -127,7 +127,7 @@ for k=1:size(traj,2)-1
     f = @(x)globalCost(corespondencesEdge, corespondencesPlane, barycenterEdge_1, barycenterEdge_2,...
         normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, x);
     try
-        options = optimoptions('lsqnonlin','FunctionTolerance', 0.001);
+        options = optimoptions('lsqnonlin','FunctionTolerance', 0.01);
         [x, ~] = lsqnonlin(f,x0,lb,ub,options);
     catch
         warning('optimisation failure')
@@ -155,4 +155,4 @@ load KITTI_OSTX.mat
 plot(posList(1,:), posList(2,:));
 hold on;
 plot(groundtruth(:,1),groundtruth(:,2));
-legend('Edge odometry', 'Groundtruth');
+legend('Edge & plane odometry', 'Groundtruth');

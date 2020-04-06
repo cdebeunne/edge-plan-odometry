@@ -1,17 +1,17 @@
-%load KITTI_VEL_SCAN.mat
+% load KITTI_VEL_SCAN.mat
 
 % point cloud analysis parameters
 c_edge = 0.2;
 c_plane = 0.05;
 distThreshold = 0.2;
-minClusterSize = 10;
+minClusterSize = 5;
 barycenterThreshold = 1.5;
 
 
-filteredCloud_1 = cloudFilter(traj{250}, "HDL64");
+filteredCloud_1 = cloudFilter(traj{80}, "HDL64");
 [edgeIdx_1, planeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1.Location, c_edge, c_plane);
 
-filteredCloud_2 = cloudFilter(traj{251}, "HDL64");
+filteredCloud_2 = cloudFilter(traj{81}, "HDL64");
 [edgeIdx_2, planeIdx_2, labelCloud_2, smoothnessCloud_2] = edgeDetector(filteredCloud_2.Location, c_edge, c_plane);
 
 size1 = size(filteredCloud_1.Location, 1);
@@ -53,9 +53,9 @@ planeCloud_2 = select(filteredCloud_2, ~planeIdx_2, 'OutputSize', 'full');
 % clustering the plane clouds
 
 [planePoints_1, centeredPlane_1, barycenterPlane_1, labelsPlane_1, validLabels_1]...
-    = clusteringCentering(planeCloud_1, 0.2, 10);
+    = clusteringCentering(planeCloud_1, 0.2, 30);
 [planePoints_2, centeredPlane_2, barycenterPlane_2, labelsPlane_2, validLabels_2]...
-    = clusteringCentering(planeCloud_2, 0.2, 10);
+    = clusteringCentering(planeCloud_2, 0.2, 30);
 
 % create the normal array
 
@@ -64,8 +64,8 @@ planeCloud_2 = select(filteredCloud_2, ~planeIdx_2, 'OutputSize', 'full');
 
 % filtering the planes that are not planes
 
-% goodPlanes_1 = mean(normalsStd_1)<0.7;
-% goodPlanes_2 = mean(normalsStd_2)<0.7;
+% goodPlanes_1 = max(normalsStd_1)<0.8;
+% goodPlanes_2 = max(normalsStd_2)<0.8;
 % 
 % planePoints_1 = planePoints_1(goodPlanes_1);
 % centeredPlane_1 = centeredPlane_1(goodPlanes_1);
@@ -155,12 +155,12 @@ pcshow(planeCloud_2.Location,labelCorespondences_2)
 colormap(hsv(size(corespondencesPlane,1)))
 title('plane 2 Matched')
 
-figure(3)
-pcshow(filteredCloud_1.Location,labelCloud_1)
-colormap([[1 0 0]; [0 1 0]; [0 0 1]]);
-title('Point Cloud planes and edges')
-
-figure(4)
-pcshow(filteredCloud_2.Location,labelCloud_2)
-colormap([[1 0 0]; [0 1 0]; [0 0 1]]);
-title('Point Cloud planes and edges')
+% figure(3)
+% pcshow(filteredCloud_1.Location,labelCloud_1)
+% colormap([[1 0 0]; [0 1 0]; [0 0 1]]);
+% title('Point Cloud planes and edges')
+% 
+% figure(4)
+% pcshow(filteredCloud_2.Location,labelCloud_2)
+% colormap([[1 0 0]; [0 1 0]; [0 0 1]]);
+% title('Point Cloud planes and edges')
