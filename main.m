@@ -1,4 +1,4 @@
-% load KITTI_VEL_SCAN.mat
+%load KITTI_VEL_SCAN.mat
 
 % point cloud analysis parameters
 c_edge = 0.2;
@@ -8,10 +8,10 @@ minClusterSize = 5;
 barycenterThreshold = 1.5;
 
 
-filteredCloud_1 = cloudFilter(traj{80}, "HDL64");
+filteredCloud_1 = cloudFilter(traj{200}, "HDL64");
 [edgeIdx_1, planeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1.Location, c_edge, c_plane);
 
-filteredCloud_2 = cloudFilter(traj{81}, "HDL64");
+filteredCloud_2 = cloudFilter(traj{201}, "HDL64");
 [edgeIdx_2, planeIdx_2, labelCloud_2, smoothnessCloud_2] = edgeDetector(filteredCloud_2.Location, c_edge, c_plane);
 
 size1 = size(filteredCloud_1.Location, 1);
@@ -53,9 +53,9 @@ planeCloud_2 = select(filteredCloud_2, ~planeIdx_2, 'OutputSize', 'full');
 % clustering the plane clouds
 
 [planePoints_1, centeredPlane_1, barycenterPlane_1, labelsPlane_1, validLabels_1]...
-    = clusteringCentering(planeCloud_1, 0.2, 30);
+    = clusteringCentering(planeCloud_1, 0.3, 50);
 [planePoints_2, centeredPlane_2, barycenterPlane_2, labelsPlane_2, validLabels_2]...
-    = clusteringCentering(planeCloud_2, 0.2, 30);
+    = clusteringCentering(planeCloud_2, 0.3, 50);
 
 % create the normal array
 
@@ -64,25 +64,24 @@ planeCloud_2 = select(filteredCloud_2, ~planeIdx_2, 'OutputSize', 'full');
 
 % filtering the planes that are not planes
 
-% goodPlanes_1 = max(normalsStd_1)<0.8;
-% goodPlanes_2 = max(normalsStd_2)<0.8;
-% 
-% planePoints_1 = planePoints_1(goodPlanes_1);
-% centeredPlane_1 = centeredPlane_1(goodPlanes_1);
-% barycenterPlane_1 = barycenterPlane_1(goodPlanes_1,:);
-% validLabels_1 = validLabels_1(goodPlanes_1);
-% 
-% planePoints_2 = planePoints_2(goodPlanes_2);
-% centeredPlane_2 = centeredPlane_2(goodPlanes_2);
-% barycenterPlane_2 = barycenterPlane_2(goodPlanes_2,:);
-% validLabels_2 = validLabels_2(goodPlanes_2);
+goodPlanes_1 = max(normalsStd_1)<0.9;
+goodPlanes_2 = max(normalsStd_2)<0.9;
+
+planePoints_1 = planePoints_1(goodPlanes_1);
+centeredPlane_1 = centeredPlane_1(goodPlanes_1);
+barycenterPlane_1 = barycenterPlane_1(goodPlanes_1,:);
+validLabels_1 = validLabels_1(goodPlanes_1);
+
+planePoints_2 = planePoints_2(goodPlanes_2);
+centeredPlane_2 = centeredPlane_2(goodPlanes_2);
+barycenterPlane_2 = barycenterPlane_2(goodPlanes_2,:);
+validLabels_2 = validLabels_2(goodPlanes_2);
 
 
 % match the plane clouds
 
 corespondencesPlane = matchingPlane(centeredPlane_1, centeredPlane_2,...
     normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, 3);
-
 
 %--------------------------------------------------------------------------
 % finding the correct rigid transform with Levenberg and Marquardt algorithm

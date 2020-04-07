@@ -67,9 +67,9 @@ for k=1:size(traj,2)-1
     % clustering the plane clouds
     
     [planePoints_1, centeredPlane_1, barycenterPlane_1, labelsPlane_1, validLabels_1]...
-        = clusteringCentering(planeCloud_1, 0.2, 30);
+        = clusteringCentering(planeCloud_1, 0.3, 50);
     [planePoints_2, centeredPlane_2, barycenterPlane_2, labelsPlane_2, validLabels_2]...
-        = clusteringCentering(planeCloud_2, 0.2, 30);
+        = clusteringCentering(planeCloud_2, 0.3, 50);
     
     % creating the normal arrays
     
@@ -77,19 +77,19 @@ for k=1:size(traj,2)-1
     [normalsPlane_2, normalsStd_2]  = normalsGenerator(planePoints_2);
     
     % filtering the planes that are not planes
-%     
-%     goodPlanes_1 = max(normalsStd_1)<0.8;
-%     goodPlanes_2 = max(normalsStd_2)<0.8;
-%     
-%     planePoints_1 = planePoints_1(goodPlanes_1);
-%     centeredPlane_1 = centeredPlane_1(goodPlanes_1);
-%     barycenterPlane_1 = barycenterPlane_1(goodPlanes_1,:);
-%     validLabels_1 = validLabels_1(goodPlanes_1);
-%     
-%     planePoints_2 = planePoints_2(goodPlanes_2);
-%     centeredPlane_2 = centeredPlane_2(goodPlanes_2);
-%     barycenterPlane_2 = barycenterPlane_2(goodPlanes_2,:);
-%     validLabels_2 = validLabels_2(goodPlanes_2);
+    
+    goodPlanes_1 = max(normalsStd_1)<0.9;
+    goodPlanes_2 = max(normalsStd_2)<0.9;
+    
+    planePoints_1 = planePoints_1(goodPlanes_1);
+    centeredPlane_1 = centeredPlane_1(goodPlanes_1);
+    barycenterPlane_1 = barycenterPlane_1(goodPlanes_1,:);
+    validLabels_1 = validLabels_1(goodPlanes_1);
+    
+    planePoints_2 = planePoints_2(goodPlanes_2);
+    centeredPlane_2 = centeredPlane_2(goodPlanes_2);
+    barycenterPlane_2 = barycenterPlane_2(goodPlanes_2,:);
+    validLabels_2 = validLabels_2(goodPlanes_2);
     
     
     % match the plane clouds

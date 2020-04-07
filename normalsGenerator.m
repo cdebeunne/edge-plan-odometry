@@ -16,10 +16,6 @@ for i=1:length(planePoints)
             normals(k,:) = -normals(k,:);
         end
     end
-    normalizedNormals = zeros(length(normals),3);
-    for j=1:length(normals)
-        normalizedNormals(j,:) = normals(j,:)/norm(normals(j,:));
-    end
-    normalsPlane(:,i) = mean(normalizedNormals);
-    normalsStd(:,i) = std(normalizedNormals);
+    normalsPlane(:,i) = mean(normals)/norm(mean(normals));
+    normalsStd(:,i) = std(normals);
 end

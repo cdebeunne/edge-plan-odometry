@@ -6,7 +6,7 @@ corespondencesPlane = [];
 idxList = [];  
 for i=1:length(centeredPoints_1)
     dist = 500;
-    ratio = 0.95;
+    ratio = 0.98;
     idx = 0;
     for j=1:length(centeredPoints_2)
         try
