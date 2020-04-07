@@ -16,6 +16,12 @@ for i=1:length(planePoints)
             normals(k,:) = -normals(k,:);
         end
     end
+    
+    % remove outliers 
+    inliers = ~isoutlier(normals);
+    inliers = logical(inliers(:,1).*inliers(:,2).*inliers(:,3));
+    normals = normals(inliers,:);
+    
     normalsPlane(:,i) = mean(normals)/norm(mean(normals));
     normalsStd(:,i) = std(normals);
 end

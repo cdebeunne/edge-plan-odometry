@@ -1,4 +1,4 @@
-%load KITTI_VEL_SCAN.mat
+% load KITTI_VEL_SCAN.mat
 
 % point cloud analysis parameters
 c_edge = 0.2;
@@ -8,10 +8,10 @@ minClusterSize = 5;
 barycenterThreshold = 1.5;
 
 
-filteredCloud_1 = cloudFilter(traj{200}, "HDL64");
+filteredCloud_1 = cloudFilter(traj{80}, "HDL64");
 [edgeIdx_1, planeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1.Location, c_edge, c_plane);
 
-filteredCloud_2 = cloudFilter(traj{201}, "HDL64");
+filteredCloud_2 = cloudFilter(traj{81}, "HDL64");
 [edgeIdx_2, planeIdx_2, labelCloud_2, smoothnessCloud_2] = edgeDetector(filteredCloud_2.Location, c_edge, c_plane);
 
 size1 = size(filteredCloud_1.Location, 1);
@@ -154,12 +154,12 @@ pcshow(planeCloud_2.Location,labelCorespondences_2)
 colormap(hsv(size(corespondencesPlane,1)))
 title('plane 2 Matched')
 
-% figure(3)
-% pcshow(filteredCloud_1.Location,labelCloud_1)
-% colormap([[1 0 0]; [0 1 0]; [0 0 1]]);
-% title('Point Cloud planes and edges')
-% 
-% figure(4)
-% pcshow(filteredCloud_2.Location,labelCloud_2)
-% colormap([[1 0 0]; [0 1 0]; [0 0 1]]);
-% title('Point Cloud planes and edges')
+figure(3)
+pcshow(filteredCloud_1.Location,labelCloud_1)
+colormap([[1 0 0]; [0 1 0]; [0 0 1]]);
+title('Point Cloud planes and edges')
+
+figure(4)
+pcshow(filteredCloud_2.Location,labelCloud_2)
+colormap([[1 0 0]; [0 1 0]; [0 0 1]]);
+title('Point Cloud planes and edges')
