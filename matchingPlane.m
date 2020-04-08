@@ -1,7 +1,10 @@
-function corespondencesPlane = matchingPlane(centeredPoints_1, centeredPoints_2, normalsPlane_1, normalsPlane_2,...
+function[corespondencesPlane, corespondencesWeights] = matchingPlane(centeredPoints_1,...
+    centeredPoints_2, normalsPlane_1, normalsPlane_2,...
     barycenterMap_1, barycenterMap_2, barycenterThreshold)
 
 corespondencesPlane = [];
+corespondencesMahal = [];
+corespondencesDeltaSize = [];
 % idenx list to prevent from double match
 idxList = [];  
 for i=1:length(centeredPoints_1)
@@ -18,6 +21,7 @@ for i=1:length(centeredPoints_1)
             if mahaldist < dist && dotRatio > ratio && barycenterDist < barycenterThreshold && deltaSize < 0.3
                 dist = mahaldist;
                 ratio = dotRatio;
+                optiDelta = deltaSize;
                 idx = j;
             end
         catch
@@ -27,6 +31,18 @@ for i=1:length(centeredPoints_1)
     if idx~=0 && ~ismember(idx, idxList) && mahaldist ~= 0
         idxList = [idxList, idx];
         corespondencesPlane = [corespondencesPlane; [i, idx]];
+        corespondencesMahal = [corespondencesMahal; dist];
+        corespondencesDeltaSize = [corespondencesDeltaSize;...
+            optiDelta];
     end
+end
+
+% building the correspondences weights
+corespondencesWeights = [];
+weightList = corespondencesDeltaSize;
+minWeight = min(weightList);
+for k =1:length(corespondencesMahal)
+    weight = (1+minWeight)/(1+weightList(k));
+    corespondencesWeights = [corespondencesWeights; weight];
 end
 end

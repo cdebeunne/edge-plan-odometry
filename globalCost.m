@@ -1,5 +1,5 @@
 function F = globalCost(corespondencesEdge, corespondencesPlane, barycenterEdge_1, barycenterEdge_2,...
-    normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, x)
+    normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, edgeWeights, planeWeights, x)
 
 F = zeros(length(corespondencesEdge)+length(corespondencesPlane), 2);
 for k=1:length(corespondencesEdge)
@@ -11,8 +11,8 @@ for k=1:length(corespondencesEdge)
     X2 = [barycenterEdge_2(j,1); barycenterEdge_2(j,2)];
     tX = [x(1); x(2)];
     delta_X = X2 - R\(X1-tX);
-    F(k,1) = delta_X(1);
-    F(k,2) = delta_X(2);
+    F(k,1) = delta_X(1)*edgeWeights(k);
+    F(k,2) = delta_X(2)*edgeWeights(k);
 end
 
 for k=length(corespondencesEdge)+1:length(corespondencesEdge)+length(corespondencesPlane)
@@ -27,6 +27,7 @@ for k=length(corespondencesEdge)+1:length(corespondencesEdge)+length(coresponden
     eulang = [x(4), x(5), x(6)];
     R = eul2rotm(eulang, 'XYZ');
     newNormals_1 = R*normalsPlane_1(:,i);
-    F(k,2) = dot(newNormals_1,normalsPlane_2(:,j))-norm(newNormals_1)*norm(normalsPlane_2(:,j));    
+    F(k,2) = dot(newNormals_1,normalsPlane_2(:,j))-norm(newNormals_1)*norm(normalsPlane_2(:,j));
+    F(k,2) = F(k,2)*planeWeights(index);
     
 end

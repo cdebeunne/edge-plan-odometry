@@ -8,6 +8,12 @@ validLabels = [];
 for i=1:numClusters
     if nnz(labels==i)>minClusterSize
         cluster = select(ptCloud, find(labels==i));
+        
+        % check if it's not a cloud full of zeros
+        if cluster.Location(1,1) == 0
+            continue;
+        end
+        
         clusterArray{ct} = cluster.Location;
         ct = ct+1;
         validLabels = [validLabels, i];

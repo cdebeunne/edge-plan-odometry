@@ -8,10 +8,10 @@ minClusterSize = 5;
 barycenterThreshold = 1.5;
 
 
-filteredCloud_1 = cloudFilter(traj{80}, "HDL64");
+filteredCloud_1 = cloudFilter(traj{5}, "HDL64");
 [edgeIdx_1, planeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1.Location, c_edge, c_plane);
 
-filteredCloud_2 = cloudFilter(traj{81}, "HDL64");
+filteredCloud_2 = cloudFilter(traj{6}, "HDL64");
 [edgeIdx_2, planeIdx_2, labelCloud_2, smoothnessCloud_2] = edgeDetector(filteredCloud_2.Location, c_edge, c_plane);
 
 size1 = size(filteredCloud_1.Location, 1);
@@ -41,7 +41,7 @@ edgeCloud_2 = select(filteredCloud_2, ~edgeIdx_2, 'OutputSize', 'full');
 
 % match the subclouds
 
-corespondencesEdge = matchingEdge(centeredEdgePoints_1, centeredEdgePoints_2,...
+[corespondencesEdge, edgeWeights] = matchingEdge(centeredEdgePoints_1, centeredEdgePoints_2,...
     barycenterEdge_1, barycenterEdge_2, barycenterThreshold);
 
 
@@ -62,25 +62,10 @@ planeCloud_2 = select(filteredCloud_2, ~planeIdx_2, 'OutputSize', 'full');
 [normalsPlane_1, normalsStd_1] = normalsGenerator(planePoints_1);
 [normalsPlane_2, normalsStd_2]  = normalsGenerator(planePoints_2);
 
-% filtering the planes that are not planes
-
-goodPlanes_1 = max(normalsStd_1)<0.9;
-goodPlanes_2 = max(normalsStd_2)<0.9;
-
-planePoints_1 = planePoints_1(goodPlanes_1);
-centeredPlane_1 = centeredPlane_1(goodPlanes_1);
-barycenterPlane_1 = barycenterPlane_1(goodPlanes_1,:);
-validLabels_1 = validLabels_1(goodPlanes_1);
-
-planePoints_2 = planePoints_2(goodPlanes_2);
-centeredPlane_2 = centeredPlane_2(goodPlanes_2);
-barycenterPlane_2 = barycenterPlane_2(goodPlanes_2,:);
-validLabels_2 = validLabels_2(goodPlanes_2);
-
 
 % match the plane clouds
 
-corespondencesPlane = matchingPlane(centeredPlane_1, centeredPlane_2,...
+[corespondencesPlane, planeWeights] = matchingPlane(centeredPlane_1, centeredPlane_2,...
     normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, 3);
 
 %--------------------------------------------------------------------------
@@ -98,6 +83,7 @@ firstEval = f(x0);
 inliers = ~isoutlier(firstEval);
 inliers = logical(inliers(:,1).*inliers(:,2));
 corespondencesEdge = corespondencesEdge(inliers,:);
+edgeWeights = edgeWeights(inliers);
 
 % finding dz, dtheta and dpsi with the planes
 
@@ -109,6 +95,7 @@ firstEval = f(y0);
 inliers = ~isoutlier(firstEval);
 inliers = logical(inliers(:,1).*inliers(:,2));
 corespondencesPlane = corespondencesPlane(inliers,:);
+planeWeights = planeWeights(inliers);
 
 
 % global levenberg Marquardt optimisation 
@@ -116,7 +103,7 @@ x0 = [0,0,0,0,0,0];
 lb = [-1.5, -1.5, -0.5, -pi/6, -pi/6, -pi/6];
 ub = [1.5, 1.5, 0.5, pi/6, pi/6, pi/6];
 f = @(x)globalCost(corespondencesEdge, corespondencesPlane, barycenterEdge_1, barycenterEdge_2,...
-    normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, x);
+    normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, edgeWeights, planeWeights, x);
 try
     options = optimoptions('lsqnonlin','FunctionTolerance', 0.001);
     [x, ~] = lsqnonlin(f,x0,lb,ub,options);
@@ -129,9 +116,6 @@ disp(x);
 %--------------------------------------------------------------------------
 %display the results
 %--------------------------------------------------------------------------
-
-
-
 
 
 
