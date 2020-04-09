@@ -1,5 +1,6 @@
 function [corespondencesEdge, corespondencesWeights] = matchingEdge(centeredPoints_1,...
     centeredPoints_2, barycenterMap_1, barycenterMap_2, barycenterThreshold)
+% matching the edges and creating the weight array
 
 corespondencesEdge = [];
 corespondencesDeltaSize = [];

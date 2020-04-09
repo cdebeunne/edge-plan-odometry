@@ -1,6 +1,7 @@
 function[corespondencesPlane, corespondencesWeights] = matchingPlane(centeredPoints_1,...
     centeredPoints_2, normalsPlane_1, normalsPlane_2,...
     barycenterMap_1, barycenterMap_2, barycenterThreshold)
+% matching the planes and creating the weight array 
 
 corespondencesPlane = [];
 corespondencesMahal = [];

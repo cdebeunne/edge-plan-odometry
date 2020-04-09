@@ -1,5 +1,6 @@
 function F = costEdge(corespondences, barycenterMap_1, barycenterMap_2, x)
-%this is the cost function to find the rigid transform
+%this is the cost function using only edges to find dx, dy and dpsi
+
 F = zeros(size(corespondences,1),2);
 for k=1:size(corespondences,1)
     i = corespondences(k,1);

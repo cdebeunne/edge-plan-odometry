@@ -1,4 +1,5 @@
 function [normalsPlane, normalsStd]= normalsGenerator(planePoints)
+% build the normal map for plane analysis
 
 normalsPlane = zeros(3, length(planePoints));
 normalsStd = zeros(3, length(planePoints));
@@ -10,7 +11,6 @@ for i=1:length(planePoints)
     for k = 1:length(normals)
         p1 = [0,0,0] - planePoints{i}(k,:);
         p2 = normals(k,:);
-        % Flip the normal vector if it is not pointing towards the sensor.
         angle = atan2(norm(cross(p1,p2)),p1*p2');
         if angle > pi/2 || angle < -pi/2
             normals(k,:) = -normals(k,:);

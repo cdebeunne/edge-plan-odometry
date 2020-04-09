@@ -1,7 +1,7 @@
 function filteredCloud = cloudFilter(pc, type)
-%Filter the cloud with segments
+% Format the cloud and remove the ground 
 
-% denoise and reshape point cloud
+% reshape point cloud
 
 ptCloud = pointCloud(pc);
 if type == "VLP16"

@@ -3,9 +3,12 @@
 % point cloud analysis parameters
 c_edge = 0.2;
 c_plane = 0.05;
-distThreshold = 0.2;
-minClusterSize = 5;
-barycenterThreshold = 1.5;
+distThresholdEdge = 0.2;
+minClusterSizeEdge = 5;
+barycenterThresholdEdge = 1.5;
+distThresholdPlane = 0.3;
+minClusterSizePlane = 50;
+barycenterThresholdPlane = 3;
 
 % estimator parameters
 
@@ -20,6 +23,8 @@ R = eye(3,3);
 
 for k=1:size(traj,2)-1
     disp(k);
+    
+    % in case of empty clouds 
     if size(traj{k},1) == 0 || size(traj{k+1},1)==0
         dxWorld = R*dxWorld;
         xWorld = xWorld + dxWorld;
@@ -27,6 +32,7 @@ for k=1:size(traj,2)-1
         continue
     end
     
+    % first filtering
     filteredCloud_1 = cloudFilter(traj{k},"HDL64");
     [edgeIdx_1, planeIdx_1, labelCloud_1, smoothnessCloud_1] = edgeDetector(filteredCloud_1.Location, c_edge, c_plane);
     
@@ -42,49 +48,49 @@ for k=1:size(traj,2)-1
     % evaluate the corespondence
     %----------------------------------------------------------------------
     
-    % creating the edgeClouds
     
+    
+    % creating the edgeClouds
     edgeCloud_1 = select(filteredCloud_1, ~edgeIdx_1, 'OutputSize', 'full');
     edgeCloud_2 = select(filteredCloud_2, ~edgeIdx_2, 'OutputSize', 'full');
     
     % clustering the edge clouds
-    
     [edgePoints_1, centeredEdgePoints_1, barycenterEdge_1, labelsEdge_1]...
         = clusteringCentering(edgeCloud_1, distThreshold, minClusterSize);
     [edgePoints_2, centeredEdgePoints_2, barycenterEdge_2, labelsEdge_2]...
         = clusteringCentering(edgeCloud_2, distThreshold, minClusterSize);
     
     % match the subclouds
-    
     [corespondencesEdge, edgeWeights] = matchingEdge(centeredEdgePoints_1, centeredEdgePoints_2,...
     barycenterEdge_1, barycenterEdge_2, barycenterThreshold);
    
+
+
     % creating the plane clouds
-    
     planeCloud_1 = select(filteredCloud_1, ~planeIdx_1, 'OutputSize', 'full');
     planeCloud_2 = select(filteredCloud_2, ~planeIdx_2, 'OutputSize', 'full');
     
     % clustering the plane clouds
-    
     [planePoints_1, centeredPlane_1, barycenterPlane_1, labelsPlane_1, validLabels_1]...
-        = clusteringCentering(planeCloud_1, 0.3, 50);
+        = clusteringCentering(planeCloud_1, distThresholdPlane, minClusterSizePlane);
     [planePoints_2, centeredPlane_2, barycenterPlane_2, labelsPlane_2, validLabels_2]...
-        = clusteringCentering(planeCloud_2, 0.3, 50);
+        = clusteringCentering(planeCloud_2, distThresholdPlane, minClusterSizePlane);
     
     % creating the normal arrays
-    
     [normalsPlane_1, normalsStd_1] = normalsGenerator(planePoints_1);
     [normalsPlane_2, normalsStd_2]  = normalsGenerator(planePoints_2);
     
-    
     % match the plane clouds
-    
     [corespondencesPlane, planeWeights] = matchingPlane(centeredPlane_1, centeredPlane_2,...
     normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, 3);
     
+
+
     %--------------------------------------------------------------------------
     % finding the correct rigid transform with Levenberg and Marquardt algorithm
     %--------------------------------------------------------------------------
+    
+    
     
     x0 = [0, 0, 0];
     f = @(x)costEdge(corespondencesEdge, barycenterEdge_1, barycenterEdge_2, x);
@@ -118,9 +124,13 @@ for k=1:size(traj,2)-1
         warning('optimisation failure')
     end
     
+    
+    
     %----------------------------------------------------------------------
     % adding the new pose in world coordinates
     %----------------------------------------------------------------------
+    
+    
     
     % x,y and psi
     theta = theta + x(4);

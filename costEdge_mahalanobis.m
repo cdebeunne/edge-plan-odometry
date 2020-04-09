@@ -1,6 +1,6 @@
 function F = costEdge_mahalanobis(corespondences, edgePoints_1, edgePoints_2, x)
-%COST_MAHALANOBIS Summary of this function goes here
-%   Detailed explanation goes here
+% an alternative cost edge function using mahalanobis distance
+
 F = zeros(size(corespondences,1),1);
 for k=1:size(corespondences,1)
     i = corespondences(k,1);

@@ -1,5 +1,5 @@
-function [edgeIdx, planeIdx, labelCloud, smoothnessCloud] = edgeDetector(xyz, c_edge, c_plane)
-%return arrays describing edges
+function [edgeIdx, planeIdx, labelCloud, smoothnessCloud] = edgePlaneDetector(xyz, c_edge, c_plane)
+% return arrays describing edges and planes 
 
 % create a smouthness cloud
 smoothnessCloud = createsmoothnessCloud(xyz, 10);

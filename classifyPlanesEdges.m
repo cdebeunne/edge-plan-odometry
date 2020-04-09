@@ -1,4 +1,5 @@
 function labelCloud = classifyPlanesEdges(smoothnessCloud, c_edge, c_plane)
+% create a label array determining which point is an edge or a plane
 
 labelCloud = ones(size(smoothnessCloud,1), size(smoothnessCloud,2));
 

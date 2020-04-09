@@ -1,5 +1,6 @@
 function F = costPlane(corespondencesPlane, normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, x)
-%this is the cost function to find z, theta and phi
+% this is the cost function using planes to find z, theta and phi
+
 F = zeros(size(corespondencesPlane,1),2);
 for k=1:size(corespondencesPlane,1)
     
