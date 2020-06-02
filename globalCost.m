@@ -31,8 +31,7 @@ for k=length(corespondencesEdge)+1:length(corespondencesEdge)+length(coresponden
     % theta and psi evaluation
     eulang = [x(4), x(5), x(6)];
     R = eul2rotm(eulang, 'XYZ');
-    newNormals_1 = R*normalsPlane_1(:,i);
+    newNormals_1 = R\normalsPlane_1(:,i);
     F(k,2) = dot(newNormals_1,normalsPlane_2(:,j))-norm(newNormals_1)*norm(normalsPlane_2(:,j));
     F(k,2) = F(k,2)*planeWeights(index);
-    
 end

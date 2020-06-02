@@ -13,12 +13,12 @@ edgeCloud = (edgeCloud & dedgeCloud_left) | (edgeCloud & dedgeCloud_right);
 
 % Check if smoothness is good for plane
 planeCloud = (smoothnessCloud < c_plane & ~edgeCloud);
-% Get shift by one on left and right
+% Get shift by one on left, right, up and down
 dplaneCloud_left = [planeCloud(2:end,:); planeCloud(end,:)];
 dplaneCloud_right = [planeCloud(end,:); planeCloud(1:(end-1),:)];
 dplaneCloud_up = [planeCloud(:,2:end), planeCloud(:,1)];
 dplaneCloud_down = [planeCloud(:,end), planeCloud(:,1:(end-1))];
-% Look if left OR rigth is also valid
+% Look if shifted planes are also valid
 planeCloud = (planeCloud & dplaneCloud_left) | (planeCloud & dplaneCloud_right)...
     | (planeCloud & dplaneCloud_up) | (planeCloud & dplaneCloud_down);
 

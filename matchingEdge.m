@@ -5,10 +5,11 @@ function [corespondencesEdge, corespondencesWeights] = matchingEdge(centeredPoin
 corespondencesEdge = [];
 corespondencesDeltaSize = [];
 corespondencesMahal = [];
+svdList = [];
 % idenx list to prevent from double match
 idxList = [];  
 for i=1:length(centeredPoints_1)
-    dist = 500;
+    dist = 100;
     idx = 0;
     for j=1:length(centeredPoints_2)
         try
@@ -29,17 +30,20 @@ for i=1:length(centeredPoints_1)
         idxList = [idxList, idx];
         corespondencesEdge = [corespondencesEdge; [i, idx]];
         corespondencesDeltaSize = [corespondencesDeltaSize; optiDelta];
-        corespondencesMahal = [corespondencesMahal; dist];
+        corespondencesMahal = [corespondencesMahal; dist/100];
+        svdList = [svdList, svd(cov(centeredPoints_1{i}))];
     end
 end
 
 % building the correspondences weights
-corespondencesWeights = [];
-weightList = corespondencesDeltaSize;
+corespondencesWeights = ones(length(corespondencesDeltaSize),1);
+svdWeight = svdList(2,:)./svdList(1,:);
+weightList = svdWeight;
 minWeight = min(weightList);
-for k =1:length(corespondencesMahal)
+for k =1:length(corespondencesDeltaSize)
     weight = (1+minWeight)/(weightList(k)+1);
-    corespondencesWeights = [corespondencesWeights; weight];
+    weight = weight^3;
+    corespondencesWeights(k) = weight;
 end
 end
 

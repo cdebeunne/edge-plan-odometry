@@ -8,7 +8,7 @@ clusterArray = {};
 ct = 1;
 validLabels = [];
 
-% select only the biggest plane and generate the planePoint array
+% select only the biggest clusters and generate the cluster array
 
 for i=1:numClusters
     if nnz(labels==i)>minClusterSize
