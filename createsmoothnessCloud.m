@@ -47,7 +47,7 @@ for r_idx = 1:size(xyz,1) % for each line of the amtrix
         g_vect = S - pc_vect';
         g_norm = vecnorm(g_vect,2,2);
         normSum = sum(g_norm);
-        c_score = (1/(slice+norm(pc_vect)))*normSum;
+        c_score = (1/(counter+norm(pc_vect)))*normSum;
         
         smoothnessCloud(r_idx, valid_col(n)) = c_score;
     end

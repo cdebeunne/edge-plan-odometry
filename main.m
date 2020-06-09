@@ -1,20 +1,20 @@
-load KITTI_VEL_SCAN.mat
+% load KITTI_VEL_SCAN.mat
 
 % point cloud analysis parameters
 c_edge = 0.2;
-c_plane = 0.05;
-distThresholdEdge = 0.2;
+c_plane = 0.08;
+distThresholdEdge = 0.3;
 minClusterSizeEdge = 5;
 barycenterThresholdEdge = 1.5;
-distThresholdPlane = 0.3;
-minClusterSizePlane = 50;
+distThresholdPlane = 0.2;
+minClusterSizePlane = 40;
 barycenterThresholdPlane = 3;
 
 % first filtering of the clouds
-filteredCloud_1 = cloudFilter(traj{1}, "HDL64");
+filteredCloud_1 = cloudFilter(traj{220}, "HDL64");
 [edgeIdx_1, planeIdx_1, labelCloud_1, smoothnessCloud_1] = edgePlaneDetector(filteredCloud_1.Location, c_edge, c_plane);
 
-filteredCloud_2 = cloudFilter(traj{2}, "HDL64");
+filteredCloud_2 = cloudFilter(traj{221}, "HDL64");
 [edgeIdx_2, planeIdx_2, labelCloud_2, smoothnessCloud_2] = edgePlaneDetector(filteredCloud_2.Location, c_edge, c_plane);
 
 size1 = size(filteredCloud_1.Location, 1);
@@ -37,15 +37,15 @@ edgeCloud_2 = select(filteredCloud_2, ~edgeIdx_2, 'OutputSize', 'full');
 
 % clustering the edge clouds
 
-[edgePoints_1, centeredEdgePoints_1, barycenterEdge_1, labelsEdge_1, validEdge_1]...
-    = clusteringCentering(edgeCloud_1, distThresholdEdge, minClusterSizeEdge);
-[edgePoints_2, centeredEdgePoints_2, barycenterEdge_2, labelsEdge_2, validEdge_2]...
-    = clusteringCentering(edgeCloud_2, distThresholdEdge, minClusterSizeEdge);
+[edgePoints_1, centeredEdgePoints_1, barycenterEdge_1, directionsEdge_1, eigenEdge_1, labelsEdge_1, validEdge_1]...
+    = clusteringEdge(edgeCloud_1, distThresholdEdge, minClusterSizeEdge);
+[edgePoints_2, centeredEdgePoints_2, barycenterEdge_2, directionsEdge_2, eigenEdge_2, labelsEdge_2, validEdge_2]...
+    = clusteringEdge(edgeCloud_2, distThresholdEdge, minClusterSizeEdge);
 
 % match the subclouds
 
-[corespondencesEdge, edgeWeights] = matchingEdge(centeredEdgePoints_1, centeredEdgePoints_2,...
-    barycenterEdge_1, barycenterEdge_2, barycenterThresholdEdge);
+corespondencesEdge = matchingEdge(centeredEdgePoints_1, centeredEdgePoints_2,...
+    barycenterEdge_1, barycenterEdge_2, eigenEdge_1, eigenEdge_2, barycenterThresholdEdge);
 
 % creating the planeCloud 
 
@@ -54,20 +54,17 @@ planeCloud_2 = select(filteredCloud_2, ~planeIdx_2, 'OutputSize', 'full');
 
 % clustering the plane clouds
 
-[planePoints_1, centeredPlane_1, barycenterPlane_1, labelsPlane_1, validLabels_1]...
-    = clusteringCentering(planeCloud_1, distThresholdPlane, minClusterSizePlane);
-[planePoints_2, centeredPlane_2, barycenterPlane_2, labelsPlane_2, validLabels_2]...
-    = clusteringCentering(planeCloud_2, distThresholdPlane, minClusterSizePlane);
-
-% create the normal array
-
-[normalsPlane_1, normalsStd_1] = normalsGenerator(planePoints_1);
-[normalsPlane_2, normalsStd_2]  = normalsGenerator(planePoints_2);
+[planePoints_1, centeredPlane_1, barycenterPlane_1, normalsPlane_1,...
+    normalsStd_1, normalsList_1, labelsPlane_1, validLabels_1]...
+    = clusteringPlane(planeCloud_1, distThresholdPlane, minClusterSizePlane);
+[planePoints_2, centeredPlane_2, barycenterPlane_2, normalsPlane_2,...
+    normalsStd_2, normalsList_2, labelsPlane_2, validLabels_2]...
+    = clusteringPlane(planeCloud_2, distThresholdPlane, minClusterSizePlane);
 
 
 % match the plane clouds
 
-[corespondencesPlane, planeWeights] = matchingPlane(centeredPlane_1, centeredPlane_2,...
+corespondencesPlane = matchingPlane(centeredPlane_1, centeredPlane_2,...
     normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, barycenterThresholdPlane);
 
 
@@ -88,7 +85,6 @@ firstEval = f(x0);
 inliers = ~isoutlier(firstEval);
 inliers = logical(inliers(:,1).*inliers(:,2));
 corespondencesEdge = corespondencesEdge(inliers,:);
-edgeWeights = edgeWeights(inliers);
 
 % finding dz, dtheta and dpsi with the planes
 
@@ -100,17 +96,15 @@ firstEval = f(y0);
 inliers = ~isoutlier(firstEval);
 inliers = logical(inliers(:,1).*inliers(:,2));
 corespondencesPlane = corespondencesPlane(inliers,:);
-planeWeights = planeWeights(inliers);
 
 
 % global levenberg Marquardt optimisation 
 x0 = [0,0,0,0,0,0];
-lb = [-1.5, -1.5, -0.5, -pi/6, -pi/6, -pi/6];
-ub = [1.5, 1.5, 0.5, pi/6, pi/6, pi/6];
-f = @(x)globalCost(corespondencesEdge, corespondencesPlane, barycenterEdge_1, barycenterEdge_2,...
-    normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, edgeWeights, planeWeights, x);
-% f = @(x)globalCost_mahal(corespondencesEdge, corespondencesPlane, edgePoints_1, edgePoints_2,...
-%     normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, edgeWeights, planeWeights, x);
+lb = [-1.5, -1.5, -0.5, -0.02, -0.02, -pi/6];
+ub = [1.5, 1.5, 0.5, 0.02, 0.02, pi/6];
+f = @(x)globalCost_orth(corespondencesEdge, corespondencesPlane,...
+    edgePoints_1, directionsEdge_1, barycenterEdge_2, directionsEdge_2,...
+    normalsPlane_1, normalsPlane_2, x);
 try
     options = optimoptions('lsqnonlin','FunctionTolerance', 0.001);
     [x, ~] = lsqnonlin(f,x0,lb,ub,options);
@@ -126,26 +120,43 @@ disp(x);
 %--------------------------------------------------------------------------
 
 
+% labelCorespondences_1 = nan(size1,size2);
+% labelCorespondences_2 = nan(size1,size2);
+% for i=1:length(corespondencesEdge)
+%     label1 = validEdge_1(corespondencesEdge(i,1));
+%     labelCorespondences_1(find(labelsEdge_1==label1)) = i;
+%     label2 = validEdge_2(corespondencesEdge(i,2));
+%     labelCorespondences_2(find(labelsEdge_2==label2)) = i;
+% end
+% 
+% figure(1)
+% pcshow(edgeCloud_1.Location,labelCorespondences_1)
+% colormap(hsv(size(corespondencesEdge,1)))
+% title('edge 1 Matched')
+% 
+% figure(2)
+% pcshow(edgeCloud_2.Location,labelCorespondences_2)
+% colormap(hsv(size(corespondencesEdge,1)))
+% title('edge 2 Matched')
 
-
-labelCorespondences_1 = nan(size1,size2);
-labelCorespondences_2 = nan(size1,size2);
-for i=1:size(corespondencesPlane,1)
-    label1 = validLabels_1(corespondencesPlane(i,1));
-    labelCorespondences_1(find(labelsPlane_1==label1)) = i;
-    label2 = validLabels_2(corespondencesPlane(i,2));
-    labelCorespondences_2(find(labelsPlane_2==label2)) = i;
-end
-
-figure(1)
-pcshow(planeCloud_1.Location,labelCorespondences_1)
-colormap(hsv(size(corespondencesPlane,1)))
-title('plane 1 Matched')
-
-figure(2)
-pcshow(planeCloud_2.Location,labelCorespondences_2)
-colormap(hsv(size(corespondencesPlane,1)))
-title('plane 2 Matched')
+% labelCorespondences_1 = nan(size1,size2);
+% labelCorespondences_2 = nan(size1,size2);
+% for i=1:size(corespondencesPlane,1)
+%     label1 = validLabels_1(corespondencesPlane(i,1));
+%     labelCorespondences_1(find(labelsPlane_1==label1)) = i;
+%     label2 = validLabels_2(corespondencesPlane(i,2));
+%     labelCorespondences_2(find(labelsPlane_2==label2)) = i;
+% end
+% 
+% figure(1)
+% pcshow(planeCloud_1.Location,labelCorespondences_1)
+% colormap(hsv(size(corespondencesPlane,1)))
+% title('plane 1 Matched')
+% 
+% figure(2)
+% pcshow(planeCloud_2.Location,labelCorespondences_2)
+% colormap(hsv(size(corespondencesPlane,1)))
+% title('plane 2 Matched')
 
 % figure(3)
 % pcshow(filteredCloud_1.Location,labelCloud_1)

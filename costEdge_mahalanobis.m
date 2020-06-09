@@ -1,7 +1,8 @@
-function F = costEdge_mahalanobis(corespondences, edgePoints_1, edgePoints_2, x)
+function errEdge = costEdge_mahalanobis(corespondences, edgePoints_1, edgePoints_2, x)
 % an alternative cost edge function using mahalanobis distance
 
-F = zeros(size(corespondences,1),1);
+%% edge residuals
+errEdge = zeros(size(corespondences,1),1);
 for k=1:size(corespondences,1)
     i = corespondences(k,1);
     j = corespondences(k,2);
@@ -11,8 +12,7 @@ for k=1:size(corespondences,1)
     edgeVector_1 = edgePoints_1{i}(:, 1:2)';
     edgeVector_2 = edgePoints_2{j}(:, 1:2)';
     newEdgeVector_1 = inv(R)*(edgeVector_1-tX);
-    F(k,1) = mean(mahal(newEdgeVector_1', edgeVector_2'));
-    
+    errEdge(k) = mean(mahal(newEdgeVector_1', edgeVector_2'));   
 end
 end
 
