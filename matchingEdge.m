@@ -1,5 +1,5 @@
-function corespondencesEdge = matchingEdge(centeredPoints_1,...
-    centeredPoints_2,...
+function corespondencesEdge = matchingEdge(edgePoints_1,...
+    edgePoints_2,...
     barycenterMap_1, barycenterMap_2,...
     eigenEdge_1, eigenEdge_2,...
     barycenterThreshold)
@@ -8,16 +8,15 @@ function corespondencesEdge = matchingEdge(centeredPoints_1,...
 corespondencesEdge = [];
 % idenx list to prevent from double match
 idxList = [];  
-for i=1:length(centeredPoints_1)
-    dist = 1e+33;
+for i=1:length(edgePoints_1)
+    dist = 6;
     idx = 0;
-    for j=1:length(centeredPoints_2)
+    for j=1:length(edgePoints_2)
         try
-%             mahaldist = mean(mahal(centeredPoints_1{i}, centeredPoints_2{j}));
             eigenDist = norm(eigenEdge_1(:,i)-eigenEdge_2(:,j));
             barycenterDist = norm(barycenterMap_1(i,1:2)-barycenterMap_2(j,1:2));
-            deltaSize = abs(length(centeredPoints_1{i})-length(centeredPoints_2{j}))/...
-                max(length(centeredPoints_1{i}),length(centeredPoints_2{j}));
+            deltaSize = abs(length(edgePoints_1{i})-length(edgePoints_2{j}))/...
+                max(length(edgePoints_1{i}),length(edgePoints_2{j}));
             
             if eigenDist < dist && barycenterDist < barycenterThreshold && deltaSize<0.2
                 dist = eigenDist;
@@ -27,7 +26,7 @@ for i=1:length(centeredPoints_1)
             warning('dimension problem');
         end
     end
-    if idx~=0 && ~ismember(idx, idxList) 
+    if idx~=0
         idxList = [idxList, idx];
         corespondencesEdge = [corespondencesEdge; [i, idx]];
     end

@@ -11,7 +11,7 @@ R = eul2rotm(x(4:6), 'XYZ');
 
 
 %% Deal with edge residuals
-err_edge = zeros(2*length(corespondencesEdge),1);
+err_edge = zeros(size(corespondencesEdge,1),1);
 
 for k=1:size(corespondencesEdge,1)
     i1 = corespondencesEdge(k,1); 
@@ -28,14 +28,15 @@ for k=1:size(corespondencesEdge,1)
     
     % L2 distance edge center
     dX = norm(X2pred-X2);
+   
     % distance angulaire
     dang = dot(N2,N2pred)-(norm(N2)*norm(N2pred));
-    err_edge(2*(k-1)+1:2*k) = [dX; abs(dang)];
+    err_edge(k) = dX;
 end
 
 
 %% Deal with planes residuals
-err_planes = zeros(2*length(corespondencesPlane),1);
+err_planes = zeros(size(corespondencesPlane,1),1);
 
 for k=1:size(corespondencesPlane,1)
     i1 = corespondencesPlane(k,1);
@@ -49,13 +50,12 @@ for k=1:size(corespondencesPlane,1)
     N2pred = R'*N1;
         
     % L2 distance de X2pred au plan 1 
-    dX = N2'*(X2pred-X2);    
+    dX = N2'*(X2pred-X2);
     
     % distance angulaire
     dang = dot(N2,N2pred)-(norm(N2)*norm(N2pred));
-    err_planes(2*(k-1)+1:2*k) = [dX; abs(dang)];
+    err_planes(k) = abs(dang);
     
 end
-
 
 Error = [err_edge; err_planes];

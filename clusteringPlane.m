@@ -1,5 +1,5 @@
-function [planePoints, centeredPlanePoints, barycenterMap,...
-    normalsPlane, normalsStd, normalsList,labels, validLabels]...
+function [planePoints, barycenterMap,...
+    normalsPlane, normalsStd, normalsList, eigen, labels, validLabels]...
     = clusteringPlane(ptCloud, distThreshold, minClusterSize)
 % segment the cloud and create all the arrays necessary for matching 
 
@@ -11,6 +11,7 @@ ct = 1;
 validLabels = [];
 normalsPlane = [];
 normalsStd = [];
+eigen = [];
 normalsList = {};
 
 %% select only the biggest clusters, generate the cluster array and the normals
@@ -54,13 +55,13 @@ for i=1:numClusters
         end
         
         % check if the plane is not from the ground
-        if abs(avgNormal(3))>0.7
-            continue
-        end
+%         if abs(avgNormal(3))>0.7
+%             continue
+%         end
         
         % check if it's a good plane
-        svdPlane = svd(cov(plane));
-        if svdPlane(2)/svdPlane(3) < 100
+        svdPlane = eig(cov(plane));
+        if svdPlane(3)/svdPlane(2) < 25
             continue
         end
         
@@ -68,6 +69,7 @@ for i=1:numClusters
         normalsList{ct} = normals;
         normalsPlane(:, ct) = avgNormal;
         normalsStd(:,ct) = std(normals);
+        eigen(:,ct) = svdPlane;
         ct = ct+1;
         validLabels = [validLabels, i];
         
@@ -77,13 +79,11 @@ for i=1:numClusters
     end
 end
 
-%% create the centered array and the barycenter map
+%% create the barycenter map
 
-centeredPlanePoints = {};
 barycenterMap = zeros(length(planePoints), 3);
 for i=1:length(planePoints)
     barycenterMap(i,:) = barycenter(planePoints{i});
-    centeredPlanePoints{i} = planePoints{i}-barycenterMap(i,:);
 end
 
 end

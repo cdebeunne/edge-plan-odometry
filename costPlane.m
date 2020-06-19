@@ -23,7 +23,7 @@ for k=1:size(corespondencesPlane,1)
     
     % distance angulaire
     dang = dot(N2,N2pred)-(norm(N2)*norm(N2pred));
-    err_planes(2*(k-1)+1:2*k) = [dX; abs(dang)]; 
+    err_planes(k, :) = [0, abs(dang)]; 
 end
 
 end

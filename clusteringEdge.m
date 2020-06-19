@@ -1,4 +1,4 @@
-function [edgePoints, centeredEdgePoints, barycenterMap, directions, eigen, labels, validLabels]...
+function [edgePoints, barycenterMap, directions, eigen, labels, validLabels]...
     = clusteringEdge(ptCloud, distThreshold, minClusterSize)
 % segment the cloud and create all the arrays necessary for matching 
 
@@ -23,12 +23,12 @@ for i=1:numClusters
         edge = cluster.Location;
         
         % check if it's a good edge
-        C = cov(edge);
-        [v,e] = eig(C);
+        [v,e] = eig(cov(edge));
         direction = v(:,3);
-        if direction(3) < 0.7 
+        if direction(3) < 0.5 || e(3,3)/e(2,2)<5
             continue
         end
+        
         
         directions(:,ct) = direction;
         eigen(:,ct) = [e(1,1); e(2,2); e(3,3)];
@@ -40,13 +40,13 @@ for i=1:numClusters
     end
 end
 
-%% create the centered array and the barycenter map
 
-centeredEdgePoints = {};
+
+%% create the barycenter map
+
 barycenterMap = zeros(length(edgePoints), 3);
 for i=1:length(edgePoints)
     barycenterMap(i,:) = barycenter(edgePoints{i});
-    centeredEdgePoints{i} = edgePoints{i}-barycenterMap(i,:);
 end
 
 end

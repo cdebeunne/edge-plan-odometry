@@ -1,18 +1,32 @@
 %load KITTI_VEL_SCAN2.mat
+% load FILT_IMU_DAT.mat;
+imuTime = filtered_ROSTime;
+imuACC = filtered_ACC;
+imuGYR = filtered_GYR;
+time = filtered_scantime;
 
 % point cloud analysis parameters
-c_edge = 0.15;
-c_plane = 0.08;
-distThresholdEdge = 0.3;
+c_edge = 0.2;
+c_plane = 0.05;
+distThresholdEdge = 0.6;
 minClusterSizeEdge = 5;
 barycenterThresholdEdge = 1.5;
-distThresholdPlane = 0.3;
+distThresholdPlane = 1;
 minClusterSizePlane = 30;
-barycenterThresholdPlane = 3;
+barycenterThresholdPlane = 10;
 
-% estimator parameters
 
-% estimation of x, y and psi
+%intialisation of the estimator
+X = zeros(12,1);
+P = zeros(12, 12);
+P(1:6, 1:6) = zeros(6,6);
+Q = [0.1*eye(3,3) zeros(3,9);
+    zeros(3,3), 1e-4*eye(3,3), zeros(3,6);
+    zeros(6,6) 0.00001*eye(6,6)];
+transV = zeros(3,1);
+fail = 0;
+err = [];
+
 x = [0,0,0,0,0,0];
 xWorld = [0;0;0];
 posList = [xWorld];
@@ -22,16 +36,16 @@ psi = 0;
 tpp = [theta, phi, psi];
 R = eye(3,3);
 
-for k=1:size(traj,2)-1
+for k=1:1200
     disp(k);
     
     % in case of empty clouds
-    if size(traj{k},1) == 0 || size(traj{k+1},1)==0
-        theta = theta + x(4);
-        phi = phi + x(5);
-        psi = psi + x(6);
+    if size(filtered_traj{k},1) == 0 || size(filtered_traj{k+1},1)==0
+        theta = theta + X(4);
+        phi = phi + X(5);
+        psi = psi + X(6);
         R = eul2rotm([theta, phi, psi], 'XYZ');
-        dxWorld = R*x(1:3)';
+        dxWorld = R*X(1:3)';
         xWorld = xWorld + dxWorld;
         posList = [posList, xWorld];
         tpp = [tpp; [theta, phi, psi]];
@@ -39,25 +53,28 @@ for k=1:size(traj,2)-1
     end
     
     % first filtering
-    filteredCloud_1 = cloudFilter(traj{k},"HDL64");
+    filteredCloud_1 = cloudFilter(filtered_traj{k},"VLP16");
     [edgeIdx_1, planeIdx_1, labelCloud_1, smoothnessCloud_1] =...
         edgePlaneDetector(filteredCloud_1.Location, c_edge, c_plane);
+    %get IMU's timestamp
+    t0 = time(k);
+    nearest_index0 = interp1(imuTime, 1:length(imuTime), t0, 'nearest');
     
-    filteredCloud_2 = cloudFilter(traj{k+1},"HDL64");
+    filteredCloud_2 = cloudFilter(filtered_traj{k+1},"VLP16");
     [edgeIdx_2, planeIdx_2, labelCloud_2, smoothnessCloud_2] =...
         edgePlaneDetector(filteredCloud_2.Location, c_edge, c_plane);
+    %get IMU's timestamp
+    t1 = time(k+1);
+    nearest_index1 = interp1(imuTime, 1:length(imuTime), t1, 'nearest');
     
-    size1 = size(filteredCloud_1.Location, 1);
-    size2 = size(filteredCloud_1.Location, 2);
-    
-    
+    if ~isnan(nearest_index0) && t1-t0<1
+        [transVecImu, angVecImu, transV] = imuAnalyser(imuTime, imuACC, imuGYR,...
+            t0, t1, nearest_index0, nearest_index1, transV);
+    end
     
     %----------------------------------------------------------------------
     % evaluate the corespondence
     %----------------------------------------------------------------------
-    
-    
-    
     
     % creating the edgeClouds
     
@@ -112,17 +129,12 @@ for k=1:size(traj,2)-1
     firstEval = f(x0);
     inliers = ~isoutlier(firstEval);
     inliers = logical(inliers(:,1).*inliers(:,2));
-    corespondencesEdge = corespondencesEdge(inliers,:);
-    
-    
-    x0 = [0, 0, 0];
-    f = @(x)costEdge(corespondencesEdge, barycenterEdge_1, barycenterEdge_2, x);
-    
-    % remove outliers
-    firstEval = f(x0);
-    inliers = ~isoutlier(firstEval);
-    inliers = logical(inliers(:,1).*inliers(:,2));
-    corespondencesEdge = corespondencesEdge(inliers,:);
+    try
+        corespondencesEdge = corespondencesEdge(inliers,:);
+    catch
+        warning('yoy');
+        err = [err;k];
+    end
     
     y0 = [0,0,0,0,0,0];
     f = @(x)costPlane(corespondencesPlane, normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, x);
@@ -136,57 +148,67 @@ for k=1:size(traj,2)-1
     % optimisation
     
     x0 = [0,0,0,0,0,0];
-    lb = [-1.5, -0.02, -0.02, -0.01, -0.01, -pi/6];
-    ub = [1.5, 0.02, 0.02, 0.01, 0.01, pi/6];
-    f = @(x)globalCost_damien(corespondencesEdge, corespondencesPlane,...
-        barycenterEdge_1, barycenterEdge_2, ...
-        directionsEdge_1, directionsEdge_2,...
-        normalsPlane_1, normalsPlane_2,...
-        barycenterPlane_1, barycenterPlane_2, x);
+    lb = [-1.5, -0.05, -0.02, -0.01, -0.01, -pi/6];
+    ub = [1.5, 0.05, 0.02, 0.01, 0.01, pi/6];
+    f = @(x)globalCost_orth(corespondencesEdge, corespondencesPlane,...
+    edgePoints_1, directionsEdge_1, barycenterEdge_2, directionsEdge_2,...
+    normalsPlane_1, normalsPlane_2, x);
     
     try
         options = optimoptions('lsqnonlin','FunctionTolerance', 0.001, 'MaxFunctionEvaluations', 1000);
         [x, ~] = lsqnonlin(f,x,lb,ub,options);
+        fail = 0;
     catch
         warning('optimisation failure')
+        fail = 1;
+        err = [err; k];
     end
-    disp(x);
     
+    %----------------------------------------------------------------------
+    % Fusion with IMU thanks to Kalman Filter
+    %----------------------------------------------------------------------
+    
+    if fail == 0
+        u = [transVecImu; angVecImu];
+        z = x';
+        L = [1e-2*eye(3,3), zeros(3,3);
+            zeros(3,3), 0.1*eye(3,3)];
+        [X, P] = kalmanFilter(X, P, u, z, Q, L);
+    else
+        X = [transVecImu; angVecImu; X(7:12)];
+    end
     
     %----------------------------------------------------------------------
     % adding the new pose in world coordinates
-    %----------------------------------------------------------------------
-    
-    
+    %----------------------------------------------------------------------  
     
     % x,y and psi
-    theta = theta + x(4);
-    phi = phi + x(5);
-    psi = psi + x(6);
+    theta = theta + X(4);
+    phi = phi + X(5);
+    psi = psi + X(6);
     R = eul2rotm([theta, phi, psi], 'XYZ');
-    dxWorld = R*x(1:3)';
+    dxWorld = R*X(1:3);
     xWorld = xWorld + dxWorld;
     posList = [posList, xWorld];
     tpp = [tpp; [theta, phi, psi]];
+    transV = X(1:3)./(t1-t0);
+    
+    disp(X');
 end
 
-load KITTI_OSTX3.mat
+% load KITTI_OSTX.mat
+
+pos = groundtruth(filtered_posEnu, -3.2*pi/10);
 
 % display the results
 
 figure(1);
 plot(posList(1,:), posList(2,:));
 hold on;
-plot(groundtruth(:,1),groundtruth(:,2));
+plot(pos(:,1),pos(:,2));
+axis equal;
 legend('Edge & plane odometry', 'Groundtruth');
 title('Position comparison');
-
-figure(2)
-plot(tpp(:,1));
-hold on;
-plot(att(:,1));
-legend('Edge & plane odometry', 'Groundtruth');
-title('Attitude comparison');
 
 % save results
 
