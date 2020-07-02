@@ -15,5 +15,5 @@ This framework can be used with Velodyne VLP-16 and Velodyne HDL-64. Here are th
 
 This is a plot on a KITTI dataset trajectory
 <p align='center'>
-    <img src="/results/result.png" alt="drawing" width="400"/>
+    <img src="/results/KITTI1.eps" alt="drawing" width="400"/>
 </p>
