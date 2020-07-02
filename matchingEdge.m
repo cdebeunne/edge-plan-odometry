@@ -1,24 +1,30 @@
-function corespondencesEdge = matchingEdge(edgePoints_1,...
-    edgePoints_2,...
-    barycenterMap_1, barycenterMap_2,...
-    eigenEdge_1, eigenEdge_2,...
-    barycenterThreshold)
+function corespondencesEdge = matchingEdge(edgeStruct_1, edgeStruct_2,...
+    detector_params)
 % matching the edges and creating the weight array
 
+%% initialization
+
 corespondencesEdge = [];
-% idenx list to prevent from double match
+
+%% edge checking
+
 idxList = [];  
-for i=1:length(edgePoints_1)
-    dist = 6;
+for i=1:length(edgeStruct_1.edgePoints)
+    dist = 5;
     idx = 0;
-    for j=1:length(edgePoints_2)
+    for j=1:length(edgeStruct_2.edgePoints)
         try
-            eigenDist = norm(eigenEdge_1(:,i)-eigenEdge_2(:,j));
-            barycenterDist = norm(barycenterMap_1(i,1:2)-barycenterMap_2(j,1:2));
-            deltaSize = abs(length(edgePoints_1{i})-length(edgePoints_2{j}))/...
-                max(length(edgePoints_1{i}),length(edgePoints_2{j}));
+            eigenDist = norm(edgeStruct_1.eigen(:,i)-edgeStruct_2.eigen(:,j));
+            barycenterDist = norm(edgeStruct_1.barycenterMap(i,1:2)...
+                -edgeStruct_2.barycenterMap(j,1:2));
+            deltaSize = abs(length(edgeStruct_1.edgePoints{i})...
+                -length(edgeStruct_2.edgePoints{j}))/...
+                max(length(edgeStruct_1.edgePoints{i}),...
+                length(edgeStruct_2.edgePoints{j}));
             
-            if eigenDist < dist && barycenterDist < barycenterThreshold && deltaSize<0.2
+            if eigenDist < dist &&...
+                    barycenterDist < detector_params.barycenterThresholdEdge &&...
+                    deltaSize<0.3
                 dist = eigenDist;
                 idx = j;
             end

@@ -1,54 +1,59 @@
-%load KITTI_VEL_SCAN2.mat
+% Load data if requiered
+close all
+if ~exist('traj', 'var')
+    load KITTI_VEL_SCAN.mat;
+end
 
 % point cloud analysis parameters
-c_edge = 0.15;
-c_plane = 0.08;
-distThresholdEdge = 0.3;
-minClusterSizeEdge = 5;
-barycenterThresholdEdge = 1.5;
-distThresholdPlane = 0.3;
-minClusterSizePlane = 30;
-barycenterThresholdPlane = 3;
+detector_params.c_edge = 0.1;
+detector_params.c_plane = 0.05;
+detector_params.distThresholdEdge = 0.3;
+detector_params.minClusterSizeEdge = 5;
+detector_params.barycenterThresholdEdge = 1.5;
+detector_params.distThresholdPlane = 0.3;
+detector_params.minClusterSizePlane = 30;
+detector_params.barycenterThresholdPlane = 3;
 
 % estimator parameters
-
-% estimation of x, y and psi
-x = [0,0,0,0,0,0];
-xWorld = [0;0;0];
-posList = [xWorld];
-theta = 0;
-phi = 0;
-psi = 0;
-tpp = [theta, phi, psi];
-R = eye(3,3);
+x = zeros(1,6);
+poseStruct.xWorld = zeros(6,1);
+poseStruct.posList = [poseStruct.xWorld];
+poseStruct.transList = [x'];
+poseStruct.R = eye(3,3);
 
 for k=1:size(traj,2)-1
     disp(k);
     
     % in case of empty clouds
+    
     if size(traj{k},1) == 0 || size(traj{k+1},1)==0
-        theta = theta + x(4);
-        phi = phi + x(5);
-        psi = psi + x(6);
-        R = eul2rotm([theta, phi, psi], 'XYZ');
-        dxWorld = R*x(1:3)';
-        xWorld = xWorld + dxWorld;
-        posList = [posList, xWorld];
-        tpp = [tpp; [theta, phi, psi]];
+        % attitude update
+        
+        poseStruct.xWorld(4:6) = poseStruct.xWorld(4:6)+x(4:6);
+        poseStruct.R = eul2rotm(poseStruct.xWorld(4:6), 'XYZ');
+        
+        % pose update
+        
+        poseStruct.dxWorld = R*x(1:3)';
+        poseStruct.xWorld(1:3) = poseStruct.xWorld(1:3) + dxWorld;
+        
+        % storage
+        
+        poseStruct.posList = [poseStruct.posList, xWorld];
+        poseStruct.transList = [poseStruct.transList, x'];
         continue
     end
     
-    % first filtering
-    filteredCloud_1 = cloudFilter(traj{k},"HDL64");
-    [edgeIdx_1, planeIdx_1, labelCloud_1, smoothnessCloud_1] =...
-        edgePlaneDetector(filteredCloud_1.Location, c_edge, c_plane);
+    % first filtering of the clouds
+    filteredCloud_1 = cloudFilter(traj{20}, "HDL64");
+    [edgeStruct_1.edgeIdx, planeStruct_1.planeIdx,...
+        labelCloud_1, smoothnessCloud_1] =...
+        edgePlaneDetector(filteredCloud_1.Location, detector_params);
     
-    filteredCloud_2 = cloudFilter(traj{k+1},"HDL64");
-    [edgeIdx_2, planeIdx_2, labelCloud_2, smoothnessCloud_2] =...
-        edgePlaneDetector(filteredCloud_2.Location, c_edge, c_plane);
-    
-    size1 = size(filteredCloud_1.Location, 1);
-    size2 = size(filteredCloud_1.Location, 2);
+    filteredCloud_2 = cloudFilter(traj{21}, "HDL64");
+    [edgeStruct_2.edgeIdx, planeStruct_2.planeIdx,...
+        labelCloud_2, smoothnessCloud_2] =...
+        edgePlaneDetector(filteredCloud_2.Location, detector_params);
     
     
     
@@ -57,99 +62,73 @@ for k=1:size(traj,2)-1
     %----------------------------------------------------------------------
     
     
-    
-    
     % creating the edgeClouds
     
-    edgeCloud_1 = select(filteredCloud_1, ~edgeIdx_1, 'OutputSize', 'full');
-    edgeCloud_2 = select(filteredCloud_2, ~edgeIdx_2, 'OutputSize', 'full');
+    edgeStruct_1.edgeCloud = select(filteredCloud_1, ~edgeStruct_1.edgeIdx,...
+        'OutputSize', 'full');
+    edgeStruct_2.edgeCloud = select(filteredCloud_2, ~edgeStruct_2.edgeIdx,...
+        'OutputSize', 'full');
     
     % clustering the edge clouds
     
-    [edgePoints_1, barycenterEdge_1, directionsEdge_1, eigenEdge_1, labelsEdge_1, validEdge_1]...
-        = clusteringEdge(edgeCloud_1, distThresholdEdge, minClusterSizeEdge);
-    [edgePoints_2, barycenterEdge_2, directionsEdge_2, eigenEdge_2, labelsEdge_2, validEdge_2]...
-        = clusteringEdge(edgeCloud_2, distThresholdEdge, minClusterSizeEdge);
+    edgeStruct_1 = clusteringEdge(edgeStruct_1, detector_params);
+    edgeStruct_2 = clusteringEdge(edgeStruct_2, detector_params);
     
     % match the subclouds
     
-    corespondencesEdge = matchingEdge(edgePoints_1, edgePoints_2,...
-        barycenterEdge_1, barycenterEdge_2, eigenEdge_1, eigenEdge_2, barycenterThresholdEdge);
-    
+    corespondencesEdge = matchingEdge(edgeStruct_1, edgeStruct_2, detector_params);
     
     % creating the planeCloud
     
-    planeCloud_1 = select(filteredCloud_1, ~planeIdx_1, 'OutputSize', 'full');
-    planeCloud_2 = select(filteredCloud_2, ~planeIdx_2, 'OutputSize', 'full');
+    planeStruct_1.planeCloud = select(filteredCloud_1, ~planeStruct_1.planeIdx,...
+        'OutputSize', 'full');
+    planeStruct_2.planeCloud = select(filteredCloud_2, ~planeStruct_2.planeIdx,...
+        'OutputSize', 'full');
     
     % clustering the plane clouds
     
-    [planePoints_1, barycenterPlane_1, normalsPlane_1,...
-        normalsStd_1, normalsList_1, labelsPlane_1, validLabels_1]...
-        = clusteringPlane(planeCloud_1, distThresholdPlane, minClusterSizePlane);
-    [planePoints_2, barycenterPlane_2, normalsPlane_2,...
-        normalsStd_2, normalsList_2, labelsPlane_2, validLabels_2]...
-        = clusteringPlane(planeCloud_2, distThresholdPlane, minClusterSizePlane);
+    planeStruct_1 = clusteringPlane(planeStruct_1, detector_params);
+    planeStruct_2 = clusteringPlane(planeStruct_2, detector_params);
     
     
     % match the plane clouds
     
-    corespondencesPlane = matchingPlane(planePoints_1, planePoints_2,...
-        normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, barycenterThresholdPlane);
-    
+    corespondencesPlane = matchingPlane(planeStruct_1,...
+        planeStruct_2, detector_params);
     
     
     %--------------------------------------------------------------------------
     % finding the correct rigid transform with Levenberg and Marquardt algorithm
     %--------------------------------------------------------------------------
     
-    % finding dx, dy and dpsi with the edges
+    
+    % outliers rejection - edge
     
     x0 = [0, 0, 0];
-    f = @(x)costEdge(corespondencesEdge, barycenterEdge_1, barycenterEdge_2, x);
+    f = @(x)costEdge(corespondencesEdge, edgeStruct_1, edgeStruct_2, x);
     
     % remove outliers
+    
     firstEval = f(x0);
     inliers = ~isoutlier(firstEval);
     inliers = logical(inliers(:,1).*inliers(:,2));
     corespondencesEdge = corespondencesEdge(inliers,:);
     
-    
-    x0 = [0, 0, 0];
-    f = @(x)costEdge(corespondencesEdge, barycenterEdge_1, barycenterEdge_2, x);
-    
-    % remove outliers
-    firstEval = f(x0);
-    inliers = ~isoutlier(firstEval);
-    inliers = logical(inliers(:,1).*inliers(:,2));
-    corespondencesEdge = corespondencesEdge(inliers,:);
-    
-    y0 = [0,0,0,0,0,0];
-    f = @(x)costPlane(corespondencesPlane, normalsPlane_1, normalsPlane_2, barycenterPlane_1, barycenterPlane_2, x);
-    
-    %remove outliers
-    firstEval = f(y0);
-    inliers = ~isoutlier(firstEval);
-    inliers = logical(inliers(:,1).*inliers(:,2));
-    corespondencesPlane = corespondencesPlane(inliers,:);
-    
-    % optimisation
+    % global levenberg Marquardt optimisation
     
     x0 = [0,0,0,0,0,0];
-    lb = [-1.5, -0.02, -0.02, -0.01, -0.01, -pi/6];
-    ub = [1.5, 0.02, 0.02, 0.01, 0.01, pi/6];
-    f = @(x)globalCost_damien(corespondencesEdge, corespondencesPlane,...
-        barycenterEdge_1, barycenterEdge_2, ...
-        directionsEdge_1, directionsEdge_2,...
-        normalsPlane_1, normalsPlane_2,...
-        barycenterPlane_1, barycenterPlane_2, x);
-    
+    lb = [-1.5, -0.05, -0.02, -0.01, -0.01, -pi/6];
+    ub = [1.5, 0.05, 0.02, 0.01, 0.01, pi/6];
+    f = @(x)globalCost_bary(corespondencesEdge, corespondencesPlane,...
+        edgeStruct_1, edgeStruct_2, ...
+        planeStruct_1, planeStruct_2, x);
     try
         options = optimoptions('lsqnonlin','FunctionTolerance', 0.001, 'MaxFunctionEvaluations', 1000);
-        [x, ~] = lsqnonlin(f,x,lb,ub,options);
+        [x,resnorm,residual,exitflag,output,lambda,jacobian] = lsqnonlin(f,x,lb,ub,options);
     catch
         warning('optimisation failure')
     end
+    
     disp(x);
     
     
@@ -157,27 +136,35 @@ for k=1:size(traj,2)-1
     % adding the new pose in world coordinates
     %----------------------------------------------------------------------
     
+    % attitude update
     
+    poseStruct.xWorld(4:6) = poseStruct.xWorld(4:6)+x(4:6)';
+    poseStruct.R = eul2rotm(poseStruct.xWorld(4:6)', 'XYZ');
     
-    % x,y and psi
-    theta = theta + x(4);
-    phi = phi + x(5);
-    psi = psi + x(6);
-    R = eul2rotm([theta, phi, psi], 'XYZ');
-    dxWorld = R*x(1:3)';
-    xWorld = xWorld + dxWorld;
-    posList = [posList, xWorld];
-    tpp = [tpp; [theta, phi, psi]];
+    % pose update
+    
+    poseStruct.dxWorld = poseStruct.R*x(1:3)';
+    poseStruct.xWorld(1:3) = poseStruct.xWorld(1:3) + poseStruct.dxWorld;
+    
+    % storage
+    
+    poseStruct.posList = [poseStruct.posList, poseStruct.xWorld];
+    poseStruct.transList = [poseStruct.transList, x'];
 end
 
-load KITTI_OSTX3.mat
+if ~exist('groundtruth', 'var')
+    load KITTI_OSTX.mat;
+end
 
 % display the results
 
 figure(1);
 plot(posList(1,:), posList(2,:));
 hold on;
+axis equal;
 plot(groundtruth(:,1),groundtruth(:,2));
+xlabel('x (m)');
+ylabel('y (m)');
 legend('Edge & plane odometry', 'Groundtruth');
 title('Position comparison');
 
@@ -190,4 +177,4 @@ title('Attitude comparison');
 
 % save results
 
-save('results.mat', 'tpp', 'posList');
+save('results.mat', 'tpp', 'posList', 'transList');

@@ -11,5 +11,6 @@ for i=1:length(pointArray)
     sumDist = sumDist + norm(point-projPt);
 end
 sumDist = sumDist/length(pointArray);
+
 end
 
