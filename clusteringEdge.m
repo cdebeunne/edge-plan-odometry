@@ -1,20 +1,20 @@
-function [edgePoints, barycenterMap, directions, eigen, labels, validLabels]...
-    = clusteringEdge(ptCloud, distThreshold, minClusterSize)
+function edgeStruct = clusteringEdge(edgeStruct, detector_params)
 % segment the cloud and create all the arrays necessary for matching 
 
 %% segmentation of the cloud 
-[labels,numClusters] = pcsegdist(ptCloud,distThreshold);
-edgePoints = {};
-directions = [];
-eigen = [];
+[labels,numClusters] = pcsegdist(edgeStruct.edgeCloud,...
+    detector_params.distThresholdEdge);
+edgeStruct.edgePoints = {};
+edgeStruct.directions = [];
+edgeStruct.eigen = [];
 ct = 1;
-validLabels = [];
+edgeStruct.validLabels = [];
 
 %% select only the biggest clusters, generate the cluster array and the direction
 
 for i=1:numClusters
-    if nnz(labels==i)>minClusterSize
-        cluster = select(ptCloud, find(labels==i));
+    if nnz(labels==i)>detector_params.minClusterSizeEdge
+        cluster = select(edgeStruct.edgeCloud, find(labels==i));
         
         % check if it's not a cloud full of zeros
         if cluster.Location(1,1) == 0
@@ -30,11 +30,11 @@ for i=1:numClusters
         end
         
         
-        directions(:,ct) = direction;
-        eigen(:,ct) = [e(1,1); e(2,2); e(3,3)];
-        edgePoints{ct} = cluster.Location;
+        edgeStruct.directions(:,ct) = direction;
+        edgeStruct.eigen(:,ct) = [e(1,1); e(2,2); e(3,3)];
+        edgeStruct.edgePoints{ct} = cluster.Location;
         ct = ct+1;
-        validLabels = [validLabels, i];
+        edgeStruct.validLabels = [edgeStruct.validLabels, i];
     else
         labels(labels==i)=0;
     end
@@ -44,9 +44,9 @@ end
 
 %% create the barycenter map
 
-barycenterMap = zeros(length(edgePoints), 3);
-for i=1:length(edgePoints)
-    barycenterMap(i,:) = barycenter(edgePoints{i});
+edgeStruct.barycenterMap = zeros(length(edgeStruct.edgePoints), 3);
+for i=1:length(edgeStruct.edgePoints)
+    edgeStruct.barycenterMap(i,:) = barycenter(edgeStruct.edgePoints{i});
 end
 
 end

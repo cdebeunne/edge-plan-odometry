@@ -3,12 +3,14 @@ function filteredCloud = cloudFilter(pc, type)
 
 % reshape point cloud
 
-ptCloud = pointCloud(pc);
 if type == "VLP16"
-    filteredCloud = pointcloudMatrixVLP16(ptCloud.Location);
+    ptCloud = pointcloudMatrixVLP16(pc);
 elseif type == "HDL64"
-    filteredCloud = pointcloudMatrixHDL64(ptCloud.Location);
+    ptCloud = pointcloudMatrixHDL64(pc);
 end
+
+groundPtsIdx = segmentGroundFromLidarData(ptCloud, 'ElevationAngleDelta',18);
+filteredCloud = select(ptCloud, ~groundPtsIdx, 'OutputSize', 'full');
 
 end
 

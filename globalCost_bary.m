@@ -1,8 +1,6 @@
-function Error = globalCost_damien(corespondencesEdge, corespondencesPlane,...
-                                barycenterEdge_1, barycenterEdge_2, ...
-                                directionsEdge_1, directionsEdge_2,...
-                                normalsPlane_1, normalsPlane_2,...
-                                barycenterPlane_1, barycenterPlane_2, x)
+function Error = globalCost_bary(corespondencesEdge, corespondencesPlane,...
+    edgeStruct_1, edgeStruct_2, ...
+    planeStruct_1, planeStruct_2, x)
 % the global cost function determining a 6 DOF rigid transform
 
 %% Tranformation to optimize
@@ -16,10 +14,10 @@ err_edge = zeros(size(corespondencesEdge,1),1);
 for k=1:size(corespondencesEdge,1)
     i1 = corespondencesEdge(k,1); 
     i2 = corespondencesEdge(k,2);
-    X1 = barycenterEdge_1(i1,1:2)';
-    X2 = barycenterEdge_2(i2,1:2)';
-    N1 = directionsEdge_1(:,i1);
-    N2 = directionsEdge_2(:,i2);
+    X1 = edgeStruct_1.barycenterMap(i1,1:2)';
+    X2 = edgeStruct_2.barycenterMap(i2,1:2)';
+    N1 = edgeStruct_1.directions(:,i1);
+    N2 = edgeStruct_2.directions(:,i2);
     R2d = [cos(x(6)) -sin(x(6));
         sin(x(6)) cos(x(6))];
 
@@ -41,10 +39,10 @@ err_planes = zeros(size(corespondencesPlane,1),1);
 for k=1:size(corespondencesPlane,1)
     i1 = corespondencesPlane(k,1);
     i2 = corespondencesPlane(k,2);
-    X1 = barycenterPlane_1(i1,:)';
-    X2 = barycenterPlane_2(i2,:)';
-    N1 = normalsPlane_1(:,i1);
-    N2 = normalsPlane_2(:,i2);
+    X1 = planeStruct_1.barycenterMap(i1,:)';
+    X2 = planeStruct_2.barycenterMap(i2,:)';
+    N1 = planeStruct_1.normalsPlane(:,i1);
+    N2 = planeStruct_2.normalsPlane(:,i2);
     
     X2pred = R'*(X1-T);
     N2pred = R'*N1;

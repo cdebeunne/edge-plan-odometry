@@ -1,24 +1,23 @@
-function [planePoints, barycenterMap,...
-    normalsPlane, normalsStd, normalsList, eigen, labels, validLabels]...
-    = clusteringPlane(ptCloud, distThreshold, minClusterSize)
+function planeStruct = clusteringPlane(planeStruct, detector_params)
 % segment the cloud and create all the arrays necessary for matching 
 
 %% segmentation of the cloud
 
-[labels,numClusters] = pcsegdist(ptCloud,distThreshold);
-planePoints = {};
+[labels,numClusters] = pcsegdist(planeStruct.planeCloud,...
+    detector_params.distThresholdPlane);
+planeStruct.planePoints = {};
 ct = 1;
-validLabels = [];
-normalsPlane = [];
-normalsStd = [];
-eigen = [];
-normalsList = {};
+planeStruct.validLabels = [];
+planeStruct.normalsPlane = [];
+planeStruct.normalsStd = [];
+planeStruct.eigen = [];
+planeStruct.normalsList = {};
 
 %% select only the biggest clusters, generate the cluster array and the normals
 
 for i=1:numClusters
-    if nnz(labels==i)>minClusterSize
-        cluster = select(ptCloud, find(labels==i));
+    if nnz(labels==i)>detector_params.minClusterSizePlane
+        cluster = select(planeStruct.planeCloud, find(labels==i));
         
         % check if it's not a cloud full of zeros
         if cluster.Location(1,1) == 0
@@ -54,24 +53,19 @@ for i=1:numClusters
             continue
         end
         
-        % check if the plane is not from the ground
-%         if abs(avgNormal(3))>0.7
-%             continue
-%         end
-        
         % check if it's a good plane
         svdPlane = eig(cov(plane));
         if svdPlane(3)/svdPlane(2) < 25
             continue
         end
         
-        planePoints{ct} = plane;
-        normalsList{ct} = normals;
-        normalsPlane(:, ct) = avgNormal;
-        normalsStd(:,ct) = std(normals);
-        eigen(:,ct) = svdPlane;
+        planeStruct.planePoints{ct} = plane;
+        planeStruct.normalsList{ct} = normals;
+        planeStruct.normalsPlane(:, ct) = avgNormal;
+        planeStruct.normalsStd(:,ct) = std(normals);
+        planeStruct.eigen(:,ct) = svdPlane;
         ct = ct+1;
-        validLabels = [validLabels, i];
+        planeStruct.validLabels = [planeStruct.validLabels, i];
         
         
     else
@@ -81,9 +75,9 @@ end
 
 %% create the barycenter map
 
-barycenterMap = zeros(length(planePoints), 3);
-for i=1:length(planePoints)
-    barycenterMap(i,:) = barycenter(planePoints{i});
+planeStruct.barycenterMap = zeros(length(planeStruct.planePoints), 3);
+for i=1:length(planeStruct.planePoints)
+    planeStruct.barycenterMap(i,:) = barycenter(planeStruct.planePoints{i});
 end
 
 end
