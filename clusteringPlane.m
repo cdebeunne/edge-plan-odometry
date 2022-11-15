@@ -12,6 +12,7 @@ planeStruct.normalsPlane = [];
 planeStruct.normalsStd = [];
 planeStruct.eigen = [];
 planeStruct.normalsList = {};
+planeStruct.labels = labels;
 
 %% select only the biggest clusters, generate the cluster array and the normals
 

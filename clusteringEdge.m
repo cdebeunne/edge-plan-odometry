@@ -9,6 +9,7 @@ edgeStruct.directions = [];
 edgeStruct.eigen = [];
 ct = 1;
 edgeStruct.validLabels = [];
+edgeStruct.labels = labels;
 
 %% select only the biggest clusters, generate the cluster array and the direction
 

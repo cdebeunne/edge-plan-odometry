@@ -159,7 +159,7 @@ end
 % display the results
 
 figure(1);
-plot(posList(1,:), posList(2,:));
+plot(poseStruct.posList(1,:), poseStruct.posList(2,:));
 hold on;
 axis equal;
 plot(groundtruth(:,1),groundtruth(:,2));

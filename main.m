@@ -112,34 +112,35 @@ size2 = size(filteredCloud_1.Location, 2);
 
 labelCorespondences_1 = nan(size1,size2);
 labelCorespondences_2 = nan(size1,size2);
+
 for i=1:length(corespondencesEdge)
-    label1 = validEdge_1(corespondencesEdge(i,1));
-    labelCorespondences_1(find(labelsEdge_1==label1)) = i;
-    label2 = validEdge_2(corespondencesEdge(i,2));
-    labelCorespondences_2(find(labelsEdge_2==label2)) = i;
+    label1 = corespondencesEdge(i,1);
+    labelCorespondences_1(find(edgeStruct_1.labels==edgeStruct_1.validLabels(label1))) = i;
+    label2 = corespondencesEdge(i,2);
+    labelCorespondences_2(find(edgeStruct_2.labels==edgeStruct_2.validLabels(label2))) = i;
 end
 
 figure(1)
-pcshow(edgeCloud_1.Location,labelCorespondences_1, 'MarkerSize', 80)
+pcshow(edgeStruct_1.edgeCloud.Location,labelCorespondences_1, 'MarkerSize', 80)
 colormap(hsv(size(corespondencesEdge,1)))
 title('edge Matched')
 
 labelCorespondences_1 = nan(size1,size2);
 labelCorespondences_2 = nan(size1,size2);
 for i=1:size(corespondencesPlane,1)
-    label1 = validLabels_1(corespondencesPlane(i,1));
-    labelCorespondences_1(find(labelsPlane_1==label1)) = i;
-    label2 = validLabels_2(corespondencesPlane(i,2));
-    labelCorespondences_2(find(labelsPlane_2==label2)) = i;
+    label1 = corespondencesPlane(i,1);
+    labelCorespondences_1(find(planeStruct_1.labels==planeStruct_1.validLabels(label1))) = i;
+    label2 = corespondencesPlane(i,2);
+    labelCorespondences_2(find(planeStruct_2.labels==planeStruct_2.validLabels(label2))) = i;
 end
 
 figure;
-pcshow(planeCloud_1.Location,labelCorespondences_1)
+pcshow(planeStruct_1.planeCloud.Location,labelCorespondences_1)
 colormap(hsv(size(corespondencesPlane,1)))
 title('plane 1 Matched')
 
 figure;
-pcshow(planeCloud_2.Location,labelCorespondences_2)
+pcshow(planeStruct_2.planeCloud.Location,labelCorespondences_2)
 colormap(hsv(size(corespondencesPlane,1)))
 title('plane 2 Matched')
 
